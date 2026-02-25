@@ -1,0 +1,47 @@
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
+import datetime
+
+from app.database import Base
+
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    description = Column(String)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    scans = relationship("Scan", back_populates="project")
+
+class Scan(Base):
+    __tablename__ = "scans"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    scan_type = Column(String)
+    
+    project = relationship("Project", back_populates="scans")
+    results = relationship("ScanResult", back_populates="scan", cascade="all, delete-orphan")
+
+class Host(Base):
+    """
+    Representa un dispositivo físico único (identificado por MAC).
+    """
+    __tablename__ = "hosts"
+    mac_address = Column(String, primary_key=True, index=True)
+    hostname = Column(String)
+    first_seen = Column(DateTime, default=datetime.datetime.utcnow)
+
+class ScanResult(Base):
+    """
+    Lo que Minerva vió en un host durante un escaneo específico.
+    """
+    __tablename__ = "scan_results"
+    id = Column(Integer, primary_key=True, index=True)
+    scan_id = Column(Integer, ForeignKey("scans.id"))
+    host_mac = Column(String, ForeignKey("hosts.mac_address"))
+    ip_address = Column(String)
+    status = Column(String)
+    
+    scan = relationship("Scan", back_populates="results")
+    host = relationship("Host")

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minerva | Network Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bg-dots {
+            background-color: #0b1120;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .radar-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Esta es la animación rápida para cuando está escaneando */
+        .radar-scanning {
+            animation: pulse-ring 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+            }
+
+            100% {
+                box-shadow: 0 0 0 20px rgba(59, 130, 246, 0);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-dots text-gray-100 font-sans min-h-screen flex flex-col relative overflow-hidden">
+
+    <header class="flex justify-between items-center px-8 py-6 z-10">
+        <div class="flex items-center space-x-3">
+            <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-1.998A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z"
+                    clip-rule="evenodd" />
+            </svg>
+            <h1 class="text-xl font-bold tracking-wide">Minerva</h1>
+        </div>
+        <div class="flex items-center space-x-6">
+            <a href="#" class="text-sm text-gray-400 hover:text-white transition">Docs</a>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col items-center justify-center z-10 px-4">
+
+        <button id="btn-radar" onclick="iniciarSetup()"
+            class="relative w-40 h-40 rounded-full border border-gray-700/50 bg-gray-900/50 flex items-center justify-center hover:bg-gray-800/50 transition cursor-pointer group">
+
+            <svg id="radar-icon" class="w-16 h-16 text-blue-500 radar-pulse rounded-full" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <div class="absolute bottom-4 right-4 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#0b1120]">
+            </div>
+        </button>
+
+        <h2 class="mt-10 text-5xl font-bold tracking-tight">Network Analysis</h2>
+        <p class="mt-4 text-gray-400 max-w-lg text-center leading-relaxed">
+            Initiate a comprehensive scan to map your topology and visualize vulnerabilities with Nmap.
+        </p>
+
+        <div class="mt-12 w-full max-w-md">
+            <div class="flex justify-between items-center text-xs tracking-wider font-mono mb-2">
+                <span id="sys-status" class="text-blue-500 font-semibold">SYSTEM READY</span>
+                <span class="text-gray-500">IDLE</span>
+            </div>
+            <div class="h-px w-full bg-gradient-to-r from-gray-800 via-gray-600 to-gray-800"></div>
+            <p class="text-center text-xs text-gray-500 mt-4">
+                Click the radar icon to begin discovery
+            </p>
+        </div>
+    </main>
+
+    <footer class="pb-10 flex justify-center z-10">
+        <button
+            class="flex items-center space-x-2 bg-gray-900/80 hover:bg-gray-800 border border-gray-700/50 text-gray-300 px-6 py-2.5 rounded-full text-sm transition">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Configure Scan Settings</span>
+        </button>
+    </footer>
+
+    <script>
+        async function iniciarSetup() {
+            const statusText = document.getElementById('sys-status');
+            const radarIcon = document.getElementById('radar-icon');
+            const btnRadar = document.getElementById('btn-radar');
+
+            btnRadar.disabled = true;
+            radarIcon.classList.replace('radar-pulse', 'radar-scanning');
+            radarIcon.classList.replace('text-blue-500', 'text-yellow-500');
+            statusText.textContent = "SCANNING NETWORK...";
+            statusText.classList.replace('text-blue-500', 'text-yellow-500');
+
+            try {
+
+                await fetch('/scan');
+
+                statusText.textContent = "REDIRECTING...";
+                window.location.href = '/dashboard';
+            } catch (error) {
+                console.error("Error en el escaneo:", error);
+                statusText.textContent = "SCAN FAILED";
+                statusText.classList.replace('text-yellow-500', 'text-red-500');
+            }
+        }
+    </script>
+</body>
+
+</html>

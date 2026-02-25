@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minerva | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Colores base personalizados para que coincidan con tu diseño */
+        body {
+            background-color: #0b1120;
+        }
+
+        .bg-panel {
+            background-color: #1e293b;
+        }
+
+        .border-panel {
+            border-color: #334155;
+        }
+    </style>
+</head>
+
+<body class="text-gray-300 font-sans flex h-screen overflow-hidden">
+
+    <aside class="w-64 flex flex-col justify-between border-r border-panel bg-[#0f172a]">
+        <div>
+            <div class="flex items-center space-x-3 p-6 mb-4">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">M
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white leading-tight">Minerva</h1>
+                    <span class="text-xs text-gray-500">Network Scanner</span>
+                </div>
+            </div>
+
+            <nav class="space-y-1 px-4">
+                <a href="#"
+                    class="flex items-center space-x-3 px-4 py-3 bg-blue-600/10 text-blue-500 rounded-lg font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    <span>Network Map</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Scan History</span>
+                </a>
+                <a href="#"
+                    class="flex justify-between items-center px-4 py-3 text-gray-400 hover:text-white transition">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                        <span>Vulnerabilities</span>
+                    </div>
+                    <span class="bg-red-500/20 text-red-500 text-xs px-2 py-0.5 rounded-full">5</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="p-6 border-t border-panel flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-white">A</div>
+            <div>
+                <p class="text-sm font-medium text-white">Admin User</p>
+                <p class="text-xs text-gray-500">admin@minerva.local</p>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-[#0b1120]">
+
+        <header class="h-20 border-b border-panel flex items-center justify-between px-8">
+            <div class="relative w-96">
+                <input type="text" placeholder="Search by IP, Hostname, or MAC..."
+                    class="w-full bg-panel border border-panel text-sm rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-blue-500 text-white placeholder-gray-500">
+                <svg class="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+            <button
+                class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span>New Scan</span>
+            </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8 space-y-6">
+
+            <div class="grid grid-cols-4 gap-6">
+                <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start">
+                    <div>
+                        <p class="text-gray-400 text-sm mb-1">Total Hosts</p>
+                        <h3 class="text-3xl font-bold text-white">{{total_hosts}}</h3>
+                    </div>
+                    <div class="p-2 bg-blue-500/10 text-blue-500 rounded-lg"><svg class="w-5 h-5" fill="currentColor"
+                            viewBox="0 0 20 20">
+                            <path
+                                d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z">
+                            </path>
+                        </svg></div>
+                </div>
+                <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start">
+                    <div>
+                        <p class="text-gray-400 text-sm mb-1">Online Status</p>
+                        <h3 class="text-3xl font-bold text-white">{{online_hosts}}</h3>
+                    </div>
+                    <div class="p-2 bg-green-500/10 text-green-500 rounded-lg"><svg class="w-5 h-5" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                            </path>
+                        </svg></div>
+                </div>
+            </div>
+
+            <div class="flex space-x-6 h-[450px]">
+                <div
+                    class="flex-1 bg-panel border border-panel rounded-xl p-6 relative flex items-center justify-center overflow-hidden">
+                    <span
+                        class="absolute top-4 left-4 bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full flex items-center">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Live Monitoring
+                    </span>
+                    <div class="text-center opacity-50">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-blue-500" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5">
+                            </path>
+                        </svg>
+                        <p class="text-lg">Network Graph Area</p>
+                        <p class="text-sm text-gray-400">(Awaiting Visualization Data)</p>
+                    </div>
+                </div>
+
+                <div class="w-80 bg-panel border border-panel rounded-xl p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-white font-bold">Node Details</h3>
+                        <span
+                            class="bg-red-500/20 text-red-500 text-[10px] uppercase font-bold px-2 py-1 rounded">Vulnerable</span>
+                    </div>
+
+                    <div class="text-center mb-6">
+                        <div
+                            class="w-16 h-16 bg-[#0f172a] rounded-lg mx-auto mb-3 flex items-center justify-center border border-gray-700">
+                            <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <h4 class="text-white font-bold text-lg">Workstation-Sales</h4>
+                        <p class="text-gray-400 text-sm font-mono mt-1">192.168.1.104</p>
+                    </div>
+
+                    <div class="space-y-4 text-sm flex-1">
+                        <div>
+                            <p class="text-gray-500 text-xs mb-1">STATUS</p>
+                            <p class="text-green-400 flex items-center"><span
+                                    class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>Online</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-xs mb-1">OPEN PORTS</p>
+                            <div class="flex space-x-2 mt-1">
+                                <span
+                                    class="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs border border-gray-700">80
+                                    (HTTP)</span>
+                                <span
+                                    class="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs border border-gray-700">443
+                                    (HTTPS)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        class="w-full mt-6 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 py-2.5 rounded-lg text-sm transition font-medium">
+                        Run Deep Scan
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-panel border border-panel rounded-xl p-6">
+                <h3 class="text-white font-bold mb-4">Discovered Hosts (Latest Scan)</h3>
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="text-gray-500 border-b border-gray-800">
+                            <th class="pb-3 font-medium">IP Address</th>
+                            <th class="pb-3 font-medium">Hostname</th>
+                            <th class="pb-3 font-medium">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if hosts %}
+                        {% for host in hosts %}
+                        <tr class="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
+                            <td class="py-3 text-blue-400 font-mono">{{ host.ip }}</td>
+                            <td class="py-3 text-gray-300">{{ host.hostname }}</td>
+                            <td class="py-3">
+                                <span
+                                    class="text-green-400 bg-green-400/10 px-2 py-1 rounded text-xs border border-green-500/20">Online</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="py-4 text-center text-gray-500">No data available. Run a scan first.
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </main>
+</body>
+
+</html>
