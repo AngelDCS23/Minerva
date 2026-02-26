@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minerva | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Colores base personalizados para que coincidan con tu diseño */
         body {
             background-color: #0b1120;
         }
@@ -127,21 +128,12 @@
 
             <div class="flex space-x-6 h-[450px]">
                 <div
-                    class="flex-1 bg-panel border border-panel rounded-xl p-6 relative flex items-center justify-center overflow-hidden">
+                    class="flex-1 bg-panel border border-panel rounded-xl p-2 relative flex items-center justify-center overflow-hidden">
                     <span
-                        class="absolute top-4 left-4 bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full flex items-center">
-                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Live Monitoring
+                        class="absolute top-4 left-4 z-10 bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full flex items-center shadow-lg">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Live Topology
                     </span>
-                    <div class="text-center opacity-50">
-                        <svg class="w-16 h-16 mx-auto mb-4 text-blue-500" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5">
-                            </path>
-                        </svg>
-                        <p class="text-lg">Network Graph Area</p>
-                        <p class="text-sm text-gray-400">(Awaiting Visualization Data)</p>
-                    </div>
+                    <div id="network-map" class="w-full h-full"></div>
                 </div>
 
                 <div class="w-80 bg-panel border border-panel rounded-xl p-6 flex flex-col">
@@ -172,20 +164,15 @@
                         </div>
                         <div>
                             <p class="text-gray-500 text-xs mb-1">OPEN PORTS</p>
-                            <div class="flex space-x-2 mt-1">
-                                <span
-                                    class="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs border border-gray-700">80
-                                    (HTTP)</span>
-                                <span
-                                    class="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs border border-gray-700">443
-                                    (HTTPS)</span>
+                            <div id="open-ports-list" class="flex flex-wrap gap-2 mt-1">
+                                <span class="text-gray-500 text-xs italic">Awaiting Deep Scan...</span>
                             </div>
                         </div>
                     </div>
 
-                    <button
-                        class="w-full mt-6 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 py-2.5 rounded-lg text-sm transition font-medium">
-                        Run Deep Scan
+                    <button id="btn-deepscan" onclick="launchDeepScan('192.168.0.27')"
+                        class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg text-sm transition font-medium flex justify-center items-center">
+                        <span>Run Deep Scan</span>
                     </button>
                 </div>
             </div>
@@ -224,6 +211,160 @@
 
         </div>
     </main>
+
+    <script>
+        // --- FUNCIÓN RECUPERADA: CREA LOS ICONOS SVG ---
+        function createNodeSvg(type, hasVuln) {
+            let iconCode = '&#xf108;'; // desktop por defecto
+            let color = '#cbd5e1';
+            let borderColor = '#334155';
+            let glow = '';
+
+            // Estilos especiales según el dispositivo
+            if (type === 'gateway') {
+                iconCode = '&#xf1eb;'; // icono de wifi/router
+                color = '#3b82f6';
+                borderColor = '#2563eb';
+                glow = `<filter id="glowBlue"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+            } else if (hasVuln) {
+                color = '#ef4444';
+                borderColor = '#dc2626';
+                glow = `<filter id="glowRed"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+            } else {
+                if (type === 'server') iconCode = '&#xf233;';
+                if (type === 'printer') iconCode = '&#xf02f;';
+                if (type === 'camera') iconCode = '&#xf030;';
+                if (type === 'building') iconCode = '&#xf1ad;';
+            }
+
+            const filterAttr = type === 'gateway' ? 'filter="url(#glowBlue)"' : (hasVuln ? 'filter="url(#glowRed)"' : '');
+            const alertBadge = (hasVuln && type !== 'gateway') ?
+                `<circle cx="65" cy="15" r="10" fill="#ef4444"/><text x="65" y="20" font-family="sans-serif" font-weight="bold" font-size="14" fill="#fff" text-anchor="middle">!</text>` : '';
+
+            const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+                    <defs>${glow}</defs>
+                    <circle cx="40" cy="40" r="28" fill="#0f172a" stroke="${borderColor}" stroke-width="2" ${filterAttr}/>
+                    <text x="40" y="48" font-family="'Font Awesome 6 Free', 'FontAwesome'" font-weight="900" font-size="22" fill="${color}" text-anchor="middle">${iconCode}</text>
+                    ${alertBadge}
+                </svg>
+            `;
+            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+        }
+
+        async function loadTopology() {
+            try {
+                const response = await fetch('/api/topology');
+                const data = await response.json();
+
+                if (!data.nodes) {
+                    console.error("Error desde Python:", data);
+                    return;
+                }
+
+                // Transformamos los datos al formato nativo de iconos de Vis.js
+                const visualNodes = data.nodes.map(n => {
+                    let iconCode = '\uf108'; // Icono de PC por defecto
+                    let iconColor = '#94a3b8'; // Gris azulado
+
+                    // Aplicamos iconos y colores según el tipo
+                    if (n.type === 'gateway') {
+                        iconCode = '\uf1eb'; // router/wifi
+                        iconColor = '#3b82f6'; // Azul brillante
+                    } else if (n.has_vuln) {
+                        iconColor = '#ef4444'; // Rojo alerta
+                    } else {
+                        if (n.type === 'server') iconCode = '\uf233';
+                        if (n.type === 'printer') iconCode = '\uf02f';
+                        if (n.type === 'camera') iconCode = '\uf030';
+                        if (n.type === 'building') iconCode = '\uf1ad';
+                    }
+
+                    // Limpiamos las etiquetas HTML feas que manda Python
+                    const labelParts = n.label.split('\n');
+                    const hostClean = labelParts[0].replace(/<[^>]*>?/gm, ''); // Quita los <b>
+                    const ipClean = labelParts.length > 1 ? labelParts[1].replace(/<[^>]*>?/gm, '') : n.id; // Quita los <span>
+
+                    return {
+                        id: n.id,
+                        label: hostClean + '\n' + ipClean,
+                        shape: 'icon',
+                        icon: {
+                            face: '"Font Awesome 6 Free"',
+                            weight: "900", // Necesario para que FontAwesome dibuje el icono sólido
+                            code: iconCode,
+                            size: n.type === 'gateway' ? 55 : 40,
+                            color: iconColor
+                        },
+                        font: { color: '#cbd5e1', size: 12, face: 'sans-serif' },
+                        // El truco para el "Glow" en Vis.js es usar una sombra sin desplazamiento
+                        shadow: n.type === 'gateway' || n.has_vuln ? {
+                            enabled: true,
+                            color: iconColor,
+                            size: 25,
+                            x: 0,
+                            y: 0
+                        } : false
+                    };
+                });
+
+                const container = document.getElementById('network-map');
+                const options = {
+                    edges: { width: 2, color: { color: '#334155', highlight: '#3b82f6' } },
+                    physics: { barnesHut: { gravitationalConstant: -3000, centralGravity: 0.3, springLength: 150 } },
+                    interaction: { hover: true, zoomView: true, dragNodes: true }
+                };
+
+                // Truco Pro: Esperamos a que la fuente de FontAwesome esté cargada antes de dibujar el canvas
+                document.fonts.ready.then(() => {
+                    const network = new vis.Network(container, { nodes: visualNodes, edges: data.edges }, options);
+
+                    network.on("click", function (params) {
+                        if (params.nodes.length > 0 && params.nodes[0] !== 'gateway') {
+                            document.getElementById('btn-deepscan').setAttribute('onclick', `launchDeepScan('${params.nodes[0]}')`);
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error("Fallo crítico dibujando el mapa:", error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadTopology);
+    </script>
+
+    <script>
+        async function launchDeepScan(ip) {
+            const btn = document.getElementById('btn-deepscan');
+            const portsList = document.getElementById('open-ports-list');
+
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-2 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Scanning...`;
+            portsList.innerHTML = `<span class="text-yellow-500 text-xs animate-pulse">Analyzing ports and services...</span>`;
+
+            try {
+                const response = await fetch(`/deep_scan/${ip}`);
+                const data = await response.json();
+
+                portsList.innerHTML = '';
+                if (data.ports && data.ports.length > 0) {
+                    data.ports.forEach(port => {
+                        portsList.innerHTML += `<span class="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs border border-gray-700 hover:border-blue-500 transition cursor-help" title="${port.version_info}">${port.port_number} (${port.service_name})</span>`;
+                    });
+                } else {
+                    portsList.innerHTML = `<span class="text-gray-500 text-xs">No open ports found.</span>`;
+                }
+
+            } catch (error) {
+                console.error("Deep Scan Failed:", error);
+                portsList.innerHTML = `<span class="text-red-500 text-xs">Scan failed.</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Run Deep Scan</span>`;
+            }
+        }
+    </script>
 </body>
 
 </html>

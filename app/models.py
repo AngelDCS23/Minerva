@@ -20,12 +20,15 @@ class Scan(Base):
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     scan_type = Column(String)
     
+    gateway_ip = Column(String, nullable=True)
+    subnet_mask = Column(String, nullable=True)
+    
     project = relationship("Project", back_populates="scans")
     results = relationship("ScanResult", back_populates="scan", cascade="all, delete-orphan")
 
 class Host(Base):
     """
-    Representa un dispositivo físico único (identificado por MAC).
+    Representa un dispositivo físico único (MAC).
     """
     __tablename__ = "hosts"
     mac_address = Column(String, primary_key=True, index=True)
@@ -45,3 +48,35 @@ class ScanResult(Base):
     
     scan = relationship("Scan", back_populates="results")
     host = relationship("Host")
+
+    ports = relationship("Port", back_populates="scan_result", cascade="all, delete-orphan")
+
+class Port(Base):
+    """
+    Puertos y servicios descubiertos en una ip específica.
+    """
+    __tablename__ = "ports"
+    id = Column(Integer, primary_key=True, index=True)
+    scan_result_id = Column(Integer, ForeignKey("scan_results.id"))
+    port_number = Column(Integer)
+    protocol = Column(String)
+    service_name = Column(String)
+    state = Column(String)
+    version_info = Column(String, nullable=True)
+
+    scan_result = relationship("ScanResult", back_populates="ports")
+    vulnerabilities = relationship("Vulnerability", back_populates="port", cascade="all, delete-orphan")
+
+class Vulnerability(Base):
+    """
+    Vulnerabilidades descubiertas en un puerto específico.
+    """
+    __tablename__ = "vulnerabilities"
+    id = Column(Integer, primary_key=True, index=True)
+    port_id = Column(Integer, ForeignKey("ports.id"))
+    cve_id = Column(String, index=True)
+    description = Column(String)
+    severity = Column(String)
+
+    port = relationship("Port", back_populates="vulnerabilities")
+    
