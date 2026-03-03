@@ -41,9 +41,8 @@ async def start_scan(target: str = None, scan_mode: str = "quick", db: Session =
     db.commit()
     db.refresh(new_scan)
 
-    # 1. Hacemos SOLO el descubrimiento
     results = scanner.discover_ips(target=target)
-    discovered_ips = [] # Guardaremos las IPs vivas para decírselo al frontend
+    discovered_ips = []
 
     for device in results:
         mac_temporal = f"MAC-{device['ip']}"
@@ -60,11 +59,9 @@ async def start_scan(target: str = None, scan_mode: str = "quick", db: Session =
         db.add(db_result)
         db.commit()
 
-        # Si el equipo está encendido, lo añadimos a la lista
         if device["status"] == "up":
             discovered_ips.append(device["ip"])
 
-    # ¡Devolvemos la lista de IPs a la web para que empiece la Fase 2!
     return {"message": "Descubrimiento completado", "ips": discovered_ips}
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -98,7 +95,6 @@ async def run_deep_scan(ip: str, mode: str = "deep", db: Session = Depends(get_d
     db.query(models.Port).filter(models.Port.scan_result_id == latest_result.id).delete()
     db.commit()
 
-    # Le pasamos el 'mode' al escáner de Nmap
     port_info, os_info, vendor_info = scanner.scan_host_details(ip, mode=mode)
 
     if latest_result.host:
@@ -124,11 +120,8 @@ async def run_deep_scan(ip: str, mode: str = "deep", db: Session = Depends(get_d
         )
         db.add(new_port)
         
-        # IMPORTANTE: flush() envía el puerto a la BD sin hacer commit definitivo 
-        # para que SQLite nos devuelva su ID y podamos asociarle las vulnerabilidades
         db.flush() 
         
-        # Guardamos las vulnerabilidades asociadas a este puerto
         for v in p.get("vulns", []):
             new_vuln = models.Vulnerability(
                 port_id=new_port.id, 
@@ -202,6 +195,42 @@ async def generate_report(request: Request, db: Session = Depends(get_db)):
         "date": latest_scan.timestamp.strftime('%Y-%m-%d %H:%M')
     })
 
+@app.get("/report/{ip}", response_class=HTMLResponse)
+async def generate_single_report(ip: str, request: Request, db: Session = Depends(get_db)):
+    # Buscamos el último escaneo solo de esta IP
+    scan_result = db.query(models.ScanResult).filter(models.ScanResult.ip_address == ip).order_by(models.ScanResult.id.desc()).first()
+    
+    if not scan_result:
+        return HTMLResponse(content="<h1>Host no encontrado para generar informe.</h1>", status_code=404)
+
+    open_ports = [p for p in scan_result.ports if p.port_number != 0 and p.state != 'filtered']
+    
+    all_vulns = []
+    for port in open_ports:
+        all_vulns.extend(port.vulnerabilities)
+        
+    high_count = sum(1 for v in all_vulns if v.severity == "High")
+    med_count = sum(1 for v in all_vulns if v.severity == "Medium")
+    low_count = sum(1 for v in all_vulns if v.severity == "Low")
+    
+    risk_score = "Low"
+    if high_count > 0: risk_score = "High"
+    elif med_count > 0: risk_score = "Medium"
+    elif len(open_ports) > 5: risk_score = "Medium"
+
+    return templates.TemplateResponse("single_report.html", {
+        "request": request,
+        "ip": ip,
+        "host": scan_result.host,
+        "scan_result": scan_result,
+        "ports": open_ports,
+        "vulns": all_vulns,
+        "risk_score": risk_score,
+        "high_count": high_count,
+        "med_count": med_count,
+        "low_count": low_count,
+        "date": scan_result.scan.timestamp.strftime('%Y-%m-%d %H:%M') if scan_result.scan else "N/A"
+    })
 
 @app.get("/api/topology")
 async def get_topology(db: Session = Depends(get_db)):
@@ -295,37 +324,31 @@ async def get_node_details(ip: str, db: Session = Depends(get_db)):
     return {
         "ip": ip, "hostname": hostname, "status": scan_result.status,
         "type": device_type, "os_name": os_name, "vendor": vendor, "ports": ports_data,
-        "vuln_count": total_node_vulns # <-- Enviamos cuántas tiene este nodo
+        "vuln_count": total_node_vulns 
     }
 
 @app.get("/host/{ip}", response_class=HTMLResponse)
 async def host_details(ip: str, request: Request, db: Session = Depends(get_db)):
-    # Buscamos el último escaneo de esta IP
     scan_result = db.query(models.ScanResult).filter(models.ScanResult.ip_address == ip).order_by(models.ScanResult.id.desc()).first()
     
     if not scan_result:
         return HTMLResponse(content="<h1>Host no encontrado</h1>", status_code=404)
 
-    # Filtramos los puertos reales abiertos
     open_ports = [p for p in scan_result.ports if p.port_number != 0 and p.state != 'filtered']
     
-    # Extraemos todas las vulnerabilidades de los puertos
     all_vulns = []
     for port in open_ports:
         all_vulns.extend(port.vulnerabilities)
         
-    # Calculamos los contadores reales para el HTML
     high_count = sum(1 for v in all_vulns if v.severity == "High")
     med_count = sum(1 for v in all_vulns if v.severity == "Medium")
     low_count = sum(1 for v in all_vulns if v.severity == "Low")
     
-    # Calculamos el riesgo del equipo
     risk_score = "Low"
     if high_count > 0: risk_score = "High"
     elif med_count > 0: risk_score = "Medium"
     elif len(open_ports) > 5: risk_score = "Medium"
 
-    # ¡AQUÍ ESTÁ LA MAGIA! Enviamos todas las variables al HTML
     return templates.TemplateResponse("host_details.html", {
         "request": request,
         "ip": ip,
@@ -334,7 +357,38 @@ async def host_details(ip: str, request: Request, db: Session = Depends(get_db))
         "ports": open_ports,
         "vulns": all_vulns,
         "risk_score": risk_score,
-        "high_count": high_count,   # <-- Ya no dará error
-        "med_count": med_count,     # <-- Ya no dará error
-        "low_count": low_count      # <-- Ya no dará error
+        "high_count": high_count,  
+        "med_count": med_count,  
+        "low_count": low_count  
+    })
+
+@app.get("/host/{ip}/history", response_class=HTMLResponse)
+async def host_history(ip: str, request: Request, db: Session = Depends(get_db)):
+    history_results = db.query(models.ScanResult).filter(models.ScanResult.ip_address == ip).order_by(models.ScanResult.id.desc()).all()
+    
+    if not history_results:
+        return HTMLResponse(content="<h1>No hay historial para este host.</h1>", status_code=404)
+        
+    host_info = history_results[0].host
+    
+    timeline = []
+    for r in history_results:
+        open_ports = [p for p in r.ports if p.port_number != 0 and p.state != 'filtered']
+        
+        vulns_count = sum(len(p.vulnerabilities) for p in open_ports)
+        
+        timeline.append({
+            "scan_id": r.scan_id,
+            "date": r.scan.timestamp.strftime('%Y-%m-%d %H:%M') if r.scan else "Desconocida",
+            "status": r.status,
+            "ports_count": len(open_ports),
+            "vulns_count": vulns_count,
+            "scan_type": r.scan.scan_type if r.scan else "Desconocido"
+        })
+        
+    return templates.TemplateResponse("host_history.html", {
+        "request": request,
+        "ip": ip,
+        "host": host_info,
+        "timeline": timeline
     })

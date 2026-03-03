@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minerva | {{ ip }} History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0b1120;
+        }
+
+        .bg-panel {
+            background-color: #121b2f;
+        }
+
+        .border-panel {
+            border-color: #1e293b;
+        }
+    </style>
+</head>
+
+<body class="text-gray-300 font-sans h-screen flex flex-col overflow-hidden">
+
+    <header class="h-16 border-b border-panel bg-[#0f172a] flex items-center justify-between px-6 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">M</div>
+            <h1 class="text-lg font-bold text-white">Minerva</h1>
+        </div>
+        <nav class="flex space-x-6 text-sm font-medium">
+            <a href="/dashboard" class="text-gray-400 hover:text-white transition">Dashboard</a>
+            <a href="/scans" class="text-gray-400 hover:text-white transition">Scans</a>
+        </nav>
+        <div class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white text-xs">A</div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-8">
+        <div class="max-w-4xl mx-auto space-y-6">
+
+            <div class="text-xs text-gray-500 font-medium mb-4">
+                <a href="/dashboard" class="hover:text-gray-300">Scans</a> >
+                <a href="/host/{{ ip }}" class="hover:text-gray-300">Host {{ ip }}</a> >
+                <span class="text-gray-300">Timeline History</span>
+            </div>
+
+            <div class="flex justify-between items-end mb-8 border-b border-panel pb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-white"><i
+                            class="fa-solid fa-clock-rotate-left text-blue-500 mr-3"></i> Event Timeline</h2>
+                    <p class="text-gray-400 mt-2 text-sm font-mono">{{ ip }} | {{ host.hostname if host else 'Unknown'
+                        }}</p>
+                </div>
+                <a href="/host/{{ ip }}"
+                    class="px-4 py-2 bg-[#0f172a] border border-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Back to Host
+                </a>
+            </div>
+
+            <div class="relative border-l-2 border-gray-800 ml-4 space-y-8 pb-10">
+
+                {% for event in timeline %}
+                <div class="relative pl-8">
+                    <div
+                        class="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-[#0b1120] 
+                        {{ 'bg-red-500' if event.vulns_count > 0 else 'bg-emerald-500' if event.status == 'up' else 'bg-gray-600' }}">
+                    </div>
+
+                    <div
+                        class="bg-panel border {{ 'border-red-500/30' if event.vulns_count > 0 else 'border-panel' }} rounded-xl p-5 shadow-lg">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-white font-bold text-lg">{{ event.date }}</h3>
+                                <p class="text-gray-500 text-xs font-mono mt-1">Scan Type: {{ event.scan_type }}</p>
+                            </div>
+                            <span
+                                class="px-3 py-1 rounded text-xs font-bold uppercase border 
+                                {{ 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' if event.status == 'up' else 'bg-gray-800 text-gray-500 border-gray-700' }}">
+                                {{ event.status }}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mt-4 bg-[#0f172a] p-4 rounded-lg border border-gray-800">
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Open Ports</p>
+                                <p class="text-xl font-bold text-white">{{ event.ports_count }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Vulnerabilities</p>
+                                <p
+                                    class="text-xl font-bold {{ 'text-red-500' if event.vulns_count > 0 else 'text-green-500' }}">
+                                    {{ event.vulns_count }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-gray-500 pl-8">No historical data found.</p>
+                {% endfor %}
+
+                <div class="absolute -left-[9px] bottom-0 w-4 h-4 rounded-full border-2 border-[#0b1120] bg-gray-800">
+                </div>
+                <div class="pl-8 text-xs text-gray-600 font-bold uppercase tracking-widest mt-4">End of records</div>
+            </div>
+
+        </div>
+    </main>
+
+</body>
+
+</html>
