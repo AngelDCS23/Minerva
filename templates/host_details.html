@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minerva | Host Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0b1120;
+        }
+
+        .bg-panel {
+            background-color: #121b2f;
+        }
+
+        .border-panel {
+            border-color: #1e293b;
+        }
+    </style>
+</head>
+
+<body class="text-gray-300 font-sans h-screen flex flex-col overflow-hidden">
+
+    <header class="h-16 border-b border-panel bg-[#0f172a] flex items-center justify-between px-6 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">M</div>
+            <h1 class="text-lg font-bold text-white">Minerva</h1>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-8">
+        <div class="max-w-7xl mx-auto space-y-6">
+
+            <div class="text-xs text-gray-500 font-medium">
+                <a href="/dashboard" class="hover:text-gray-300">Scans</a> >
+                <span>Host View</span> >
+                <span class="text-gray-300">{{ ip }}</span>
+            </div>
+
+            <div class="bg-panel border border-panel rounded-xl p-6 flex justify-between items-center shadow-lg">
+                <div class="flex items-center space-x-5">
+                    <div class="w-16 h-16 bg-[#0f172a] border border-panel rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-server text-3xl text-emerald-500"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-white">{{ ip }}</h2>
+                        <div class="flex items-center space-x-3 mt-2 text-sm text-gray-400">
+                            <span><i class="fa-brands fa-linux mr-1"></i> {{ host.os_name if host and host.os_name !=
+                                'Unknown' else 'Unknown OS' }}</span>
+                            <span
+                                class="bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20 text-xs font-bold uppercase">{{
+                                scan_result.status }}</span>
+                            <span class="text-xs"><i class="fa-regular fa-clock mr-1"></i> Last Scanned: {{
+                                scan_result.scan.timestamp.strftime('%Y-%m-%d %H:%M') if scan_result.scan else 'N/A'
+                                }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button
+                        class="px-4 py-2 bg-[#0f172a] border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                        <i class="fa-solid fa-clock-rotate-left mr-2"></i> History
+                    </button>
+                    <a href="/dashboard"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition shadow-lg shadow-blue-500/20 flex items-center">
+                        <i class="fa-solid fa-arrow-left mr-2"></i> Back to Map
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-6 border-b border-panel pb-6">
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Open Ports</p>
+                    <p class="text-2xl font-bold text-white">{{ ports|length }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Vulnerabilities</p>
+                    <p
+                        class="text-2xl font-bold {{ 'text-red-500' if high_count > 0 else 'text-orange-500' if med_count > 0 else 'text-green-500' if vulns|length == 0 else 'text-gray-400' }}">
+                        {{ vulns|length }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">MAC Address</p>
+                    <p class="text-lg font-mono text-gray-300">{{ host.mac_address.replace('MAC-', '') if host else
+                        'Unknown' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Risk Score</p>
+                    <p
+                        class="text-2xl font-bold {{ 'text-red-500' if risk_score == 'High' else 'text-orange-500' if risk_score == 'Medium' else 'text-green-500' }} flex items-center">
+                        {{ risk_score }} <i
+                            class="fa-solid {{ 'fa-triangle-exclamation' if risk_score != 'Low' else 'fa-shield-check' }} ml-2 text-xl"></i>
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-8">
+
+                <div class="col-span-2 space-y-8">
+
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-white flex items-center"><i
+                                    class="fa-solid fa-network-wired text-blue-500 mr-2"></i> Open Ports</h3>
+                        </div>
+                        <div class="bg-panel border border-panel rounded-xl overflow-hidden shadow-lg">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-[#0f172a] border-b border-panel text-gray-400">
+                                    <tr>
+                                        <th class="px-6 py-3 font-medium">Port/Proto</th>
+                                        <th class="px-6 py-3 font-medium">Service</th>
+                                        <th class="px-6 py-3 font-medium">Version</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-800">
+                                    {% for port in ports %}
+                                    <tr class="hover:bg-gray-800/30 transition">
+                                        <td class="px-6 py-4 font-mono text-gray-300">{{ port.port_number }}/{{
+                                            port.protocol }}</td>
+                                        <td class="px-6 py-4 text-gray-300 uppercase">{{ port.service_name }}</td>
+                                        <td class="px-6 py-4 text-gray-400">{{ port.version_info if port.version_info
+                                            else 'Unknown' }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="3" class="px-6 py-8 text-center text-gray-500">No open ports
+                                            discovered.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-white flex items-center"><i
+                                    class="fa-solid fa-bug text-red-500 mr-2"></i> Vulnerabilities Detected</h3>
+                            <div class="flex space-x-2 text-xs font-medium">
+                                {% if high_count > 0 %}<span
+                                    class="bg-red-500/10 text-red-500 px-2 py-1 rounded border border-red-500/20">{{
+                                    high_count }} High</span>{% endif %}
+                                {% if med_count > 0 %}<span
+                                    class="bg-orange-500/10 text-orange-500 px-2 py-1 rounded border border-orange-500/20">{{
+                                    med_count }} Medium</span>{% endif %}
+                                {% if low_count > 0 %}<span
+                                    class="bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded border border-yellow-500/20">{{
+                                    low_count }} Low</span>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            {% for vuln in vulns %}
+                            <div
+                                class="bg-panel border {{ 'border-red-500/30' if vuln.severity == 'High' else 'border-orange-500/30' if vuln.severity == 'Medium' else 'border-yellow-500/30' }} rounded-xl p-5 shadow-lg relative overflow-hidden">
+                                <div
+                                    class="absolute left-0 top-0 bottom-0 w-1 {{ 'bg-red-500' if vuln.severity == 'High' else 'bg-orange-500' if vuln.severity == 'Medium' else 'bg-yellow-500' }}">
+                                </div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center space-x-3">
+                                        <span
+                                            class="bg-gray-800 text-gray-300 px-2 py-0.5 rounded text-xs font-bold border border-gray-700">{{
+                                            vuln.cve_id }}</span>
+                                        <span class="text-gray-500 text-xs">Port {{ vuln.port.port_number }}/{{
+                                            vuln.port.protocol }}</span>
+                                    </div>
+                                    <span
+                                        class="{{ 'text-red-500' if vuln.severity == 'High' else 'text-orange-500' if vuln.severity == 'Medium' else 'text-yellow-500' }} text-xs font-bold uppercase">{{
+                                        vuln.severity }} Severity</span>
+                                </div>
+                                <h4 class="text-white font-bold text-lg mb-2">Service: {{ vuln.port.service_name|upper
+                                    }} vulnerability</h4>
+                                <p class="text-gray-400 text-sm mb-4 leading-relaxed">{{ vuln.description }}</p>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-500"><i class="fa-solid fa-star mr-1"></i> CVSS: {{
+                                        vuln.cvss_score }}</span>
+                                    <a href="https://nvd.nist.gov/vuln/detail/{{ vuln.cve_id }}" target="_blank"
+                                        class="text-blue-500 hover:underline">View Mitigation in NVD</a>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div
+                                class="bg-green-500/10 border border-green-500/30 rounded-xl p-5 text-center shadow-lg">
+                                <p class="text-green-400 font-medium"><i
+                                        class="fa-solid fa-shield-check text-2xl mb-2 block"></i> No vulnerabilities
+                                    discovered!</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-1 space-y-6">
+
+                    <div class="bg-panel border border-panel rounded-xl p-6 shadow-lg">
+                        <h3 class="text-white font-bold mb-5 text-lg">System Details</h3>
+
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Hostname</p>
+                                <div
+                                    class="bg-[#0f172a] border border-gray-800 rounded px-3 py-2 text-gray-300 font-mono text-sm break-all">
+                                    {{ host.hostname if host and host.hostname != 'Desconocido' else 'ip-' ~
+                                    ip.replace('.', '-') ~ '.localdomain' }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Operating
+                                    System</p>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-300">{{ host.os_name if host and host.os_name != 'Unknown'
+                                        else 'Not detected' }}</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Vendor /
+                                    Manufacturer</p>
+                                <p class="text-gray-300 text-sm"><i
+                                        class="fa-solid fa-microchip text-gray-500 mr-2"></i> {{ host.vendor if host and
+                                    host.vendor != 'Unknown' else 'Not detected' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-panel border border-panel rounded-xl p-6 shadow-lg">
+                        <h3 class="text-white font-bold mb-3 text-lg">Analyst Notes</h3>
+                        <textarea
+                            class="w-full h-32 bg-[#0f172a] border border-gray-800 rounded-lg p-3 text-gray-300 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none mb-3"
+                            placeholder="Add notes about this host..."></textarea>
+                        <button
+                            class="w-full py-2 bg-[#0f172a] border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                            Save Note
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+
+</html>

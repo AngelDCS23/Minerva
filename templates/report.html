@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Minerva Security Report - {{ scan.gateway_ip }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @media print {
+            body {
+                background-color: white !important;
+                color: black !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+
+            .avoid-break {
+                page-break-inside: avoid;
+            }
+
+            .shadow-lg {
+                box-shadow: none !important;
+                border: 1px solid #e5e7eb !important;
+            }
+        }
+
+        body {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+    </style>
+</head>
+
+<body class="font-sans pb-20">
+
+    <div class="no-print fixed top-6 right-6 flex space-x-4 z-50">
+        <a href="/dashboard" class="px-4 py-2 bg-gray-800 text-white rounded-lg shadow hover:bg-gray-700 transition"><i
+                class="fa-solid fa-arrow-left mr-2"></i> Back</a>
+        <button onclick="window.print()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-500 transition"><i
+                class="fa-solid fa-file-pdf mr-2"></i> Export PDF</button>
+    </div>
+
+    <div class="max-w-5xl mx-auto bg-white p-12 mt-10 shadow-lg rounded-xl">
+
+        <div class="border-b-2 border-blue-600 pb-6 mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-4xl font-black text-gray-900 mb-2"><i
+                        class="fa-solid fa-shield-halved text-blue-600 mr-3"></i> Minerva Intelligence</h1>
+                <h2 class="text-2xl text-gray-500 font-light">Network Vulnerability Assessment</h2>
+            </div>
+            <div class="text-right text-sm text-gray-500">
+                <p><strong>Date:</strong> {{ date }}</p>
+                <p><strong>Target Network:</strong> {{ scan.gateway_ip }}/24</p>
+                <p><strong>Scan Type:</strong> {{ scan.scan_type }}</p>
+            </div>
+        </div>
+
+        <div class="mb-12">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 border-l-4 border-blue-600 pl-3">Executive Summary</h3>
+            <div class="grid grid-cols-4 gap-6 mb-8">
+                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 text-center">
+                    <p class="text-sm font-bold text-gray-500 uppercase">Live Hosts</p>
+                    <p class="text-4xl font-black text-blue-600 mt-2">{{ total_hosts }}</p>
+                </div>
+                <div class="bg-red-50 p-6 rounded-lg border border-red-100 text-center">
+                    <p class="text-sm font-bold text-red-500 uppercase">High Vulns</p>
+                    <p class="text-4xl font-black text-red-600 mt-2">{{ high_vulns }}</p>
+                </div>
+                <div class="bg-orange-50 p-6 rounded-lg border border-orange-100 text-center">
+                    <p class="text-sm font-bold text-orange-500 uppercase">Medium Vulns</p>
+                    <p class="text-4xl font-black text-orange-600 mt-2">{{ med_vulns }}</p>
+                </div>
+                <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-100 text-center">
+                    <p class="text-sm font-bold text-yellow-500 uppercase">Low Vulns</p>
+                    <p class="text-4xl font-black text-yellow-600 mt-2">{{ low_vulns }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800 border-l-4 border-blue-600 pl-3">Network Topology</h3>
+            <div class="border border-gray-300 rounded-lg bg-gray-50 p-2">
+                <div id="report-map" class="w-full h-[400px]"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto mt-8 page-break">
+        <h3 class="text-3xl font-black text-gray-900 mb-6 border-b-2 border-gray-300 pb-2">Detailed Host Analysis</h3>
+
+        {% for host in hosts %}
+        <div class="bg-white p-8 mb-8 shadow-lg rounded-xl avoid-break border border-gray-200">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h4 class="text-2xl font-bold text-gray-800">{{ host.ip }}</h4>
+                    <p class="text-gray-500 text-sm mt-1 font-mono">{{ host.hostname }} | MAC: {{ host.mac }}</p>
+                    <p class="text-gray-500 text-sm mt-1"><i class="fa-brands fa-linux mr-1"></i> {{ host.os }} | <i
+                            class="fa-solid fa-microchip mr-1"></i> {{ host.vendor }}</p>
+                </div>
+                <div class="text-right">
+                    <span
+                        class="px-3 py-1 rounded text-sm font-bold border {{ 'bg-red-100 text-red-600 border-red-200' if host.risk == 'High' else 'bg-orange-100 text-orange-600 border-orange-200' if host.risk == 'Medium' else 'bg-green-100 text-green-600 border-green-200' }}">
+                        Risk: {{ host.risk }}
+                    </span>
+                </div>
+            </div>
+
+            {% if host.ports|length > 0 %}
+            <h5 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3 mt-6">Open Services ({{
+                host.ports|length }})</h5>
+            <table class="w-full text-left text-sm border-collapse mb-6">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-600">
+                        <th class="border border-gray-300 px-4 py-2">Port/Proto</th>
+                        <th class="border border-gray-300 px-4 py-2">Service</th>
+                        <th class="border border-gray-300 px-4 py-2">Version</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for port in host.ports %}
+                    <tr>
+                        <td class="border border-gray-300 px-4 py-2 font-mono">{{ port.port_number }}/{{ port.protocol
+                            }}</td>
+                        <td class="border border-gray-300 px-4 py-2 uppercase">{{ port.service_name }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-gray-600">{{ port.version_info }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if host.vulns|length > 0 %}
+            <h5 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3 mt-6"><i
+                    class="fa-solid fa-bug text-red-500 mr-2"></i> Discovered Vulnerabilities ({{ host.vulns|length }})
+            </h5>
+            <div class="space-y-4">
+                {% for vuln in host.vulns %}
+                <div
+                    class="border-l-4 {{ 'border-red-500 bg-red-50' if vuln.severity == 'High' else 'border-orange-500 bg-orange-50' if vuln.severity == 'Medium' else 'border-yellow-500 bg-yellow-50' }} p-4 rounded-r-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-gray-800">{{ vuln.cve_id }}</span>
+                        <span
+                            class="text-xs font-bold {{ 'text-red-600' if vuln.severity == 'High' else 'text-orange-600' if vuln.severity == 'Medium' else 'text-yellow-600' }}">CVSS:
+                            {{ vuln.cvss_score }} ({{ vuln.severity }})</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-1"><strong>Port:</strong> {{ vuln.port.port_number }} ({{
+                        vuln.port.service_name }})</p>
+                    <p class="text-xs text-gray-600">{{ vuln.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-green-600 font-medium mt-4"><i class="fa-solid fa-shield-check mr-2"></i> No active
+                vulnerabilities discovered on this host.</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        async function loadReportTopology() {
+            try {
+                const response = await fetch('/api/topology');
+                const data = await response.json();
+
+                if (!data.nodes) return;
+
+                const visualNodes = data.nodes.map(n => {
+                    let iconCode = '\uf108'; // fa-desktop
+                    let iconColor = '#4b5563'; // gray-600
+
+                    if (n.type === 'gateway') { iconCode = '\uf1eb'; iconColor = '#2563eb'; }
+                    else if (n.has_vuln) { iconColor = '#dc2626'; }
+                    else {
+                        if (n.type === 'server') iconCode = '\uf233';
+                        if (n.type === 'printer') iconCode = '\uf02f';
+                        if (n.type === 'camera') iconCode = '\uf030';
+                        if (n.type === 'iot') iconCode = '\uf544';
+                    }
+
+                    // Limpiamos el HTML del label para que se vea bien en blanco
+                    const labelParts = n.label.split('\n');
+                    const hostClean = labelParts[0].replace(/<[^>]*>?/gm, '');
+
+                    return {
+                        id: n.id,
+                        label: hostClean,
+                        shape: 'icon',
+                        icon: { face: '"Font Awesome 6 Free"', weight: "900", code: iconCode, size: n.type === 'gateway' ? 50 : 35, color: iconColor },
+                        font: { color: '#1f2937', size: 12, face: 'sans-serif', background: 'white' }
+                    };
+                });
+
+                const container = document.getElementById('report-map');
+                const options = {
+                    edges: { width: 2, color: { color: '#9ca3af' } },
+                    physics: { barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 150 } },
+                    interaction: { hover: false, zoomView: false, dragNodes: false } // Lo hacemos estático para imprimir
+                };
+
+                document.fonts.ready.then(() => {
+                    new vis.Network(container, { nodes: visualNodes, edges: data.edges }, options);
+                });
+            } catch (error) { console.error("Error cargando mapa:", error); }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadReportTopology);
+    </script>
+</body>
+
+</html>

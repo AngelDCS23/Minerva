@@ -35,6 +35,11 @@ class Host(Base):
     hostname = Column(String)
     first_seen = Column(DateTime, default=datetime.datetime.utcnow)
 
+    os_name = Column(String, nullable=True, default="Unknown")
+    vendor = Column(String, nullable=True, default="Unknown")
+    
+    results = relationship("ScanResult", back_populates="host")
+
 class ScanResult(Base):
     """
     Lo que Minerva vió en un host durante un escaneo específico.
@@ -68,15 +73,12 @@ class Port(Base):
     vulnerabilities = relationship("Vulnerability", back_populates="port", cascade="all, delete-orphan")
 
 class Vulnerability(Base):
-    """
-    Vulnerabilidades descubiertas en un puerto específico.
-    """
     __tablename__ = "vulnerabilities"
     id = Column(Integer, primary_key=True, index=True)
     port_id = Column(Integer, ForeignKey("ports.id"))
     cve_id = Column(String, index=True)
-    description = Column(String)
-    severity = Column(String)
-
-    port = relationship("Port", back_populates="vulnerabilities")
+    severity = Column(String) # High, Medium, Low
+    cvss_score = Column(String)
+    description = Column(String, nullable=True)
     
+    port = relationship("Port", back_populates="vulnerabilities")
