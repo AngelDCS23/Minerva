@@ -46,7 +46,6 @@
                 const response = await fetch('/scan');
                 const data = await response.json();
 
-                // Limpiamos el contenido previo
                 output.innerHTML = `
             <table class="w-full text-left border-collapse">
                 <thead>
@@ -89,10 +88,8 @@
         }
 
         async function scanPorts(ip) {
-            // Buscamos un hueco para mostrar los resultados del host
             const output = document.getElementById('output');
 
-            // Creamos un área de "Cargando" específica
             const detailAreaId = `details-${ip.replace(/\./g, '-')}`;
             alert(`Iniciando escaneo profundo en ${ip}. Esto tardará unos segundos...`);
 
@@ -116,7 +113,6 @@
                 }
                 html += `</div>`;
 
-                // Insertamos los detalles (puedes mejorar esto para que se vea en un modal)
                 output.innerHTML += html;
 
             } catch (error) {

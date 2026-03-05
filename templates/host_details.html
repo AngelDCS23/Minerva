@@ -64,7 +64,8 @@
                         class="px-4 py-2 bg-[#0f172a] border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-800 transition flex items-center">
                         <i class="fa-solid fa-clock-rotate-left mr-2"></i> History
                     </a>
-                    <a href="/report/{{ ip }}" target="_blank"
+                    <a href="/report/{{ ip }}{% if current_scan_id %}?scan_id={{ current_scan_id }}{% endif %}"
+                        target="_blank"
                         class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-500 transition shadow-lg shadow-emerald-500/20 flex items-center">
                         <i class="fa-solid fa-file-pdf mr-2"></i> Export PDF
                     </a>
