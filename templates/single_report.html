@@ -37,7 +37,7 @@
 <body class="font-sans pb-20">
 
     <div class="no-print fixed top-6 right-6 flex space-x-4 z-50">
-        <a href="/host/{{ ip }}"
+        <a href="/host/{{ ip }}{% if current_scan_id %}?scan_id={{ current_scan_id }}{% endif %}"
             class="px-4 py-2 bg-gray-800 text-white rounded-lg shadow hover:bg-gray-700 transition"><i
                 class="fa-solid fa-arrow-left mr-2"></i> Back to Host</a>
         <button onclick="window.print()"

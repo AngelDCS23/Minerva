@@ -8,6 +8,12 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+
         @media print {
             body {
                 background-color: white !important;
@@ -30,6 +36,23 @@
                 box-shadow: none !important;
                 border: 1px solid #e5e7eb !important;
             }
+
+            #report-map {
+                width: 100% !important;
+                height: 400px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                overflow: hidden !important;
+            }
+
+            #report-map canvas {
+                max-width: 100% !important;
+                max-height: 100% !important;
+                width: auto !important;
+                height: auto !important;
+                object-fit: contain !important;
+            }
         }
 
         body {
@@ -42,19 +65,23 @@
 <body class="font-sans pb-20">
 
     <div class="no-print fixed top-6 right-6 flex space-x-4 z-50">
-        <a href="/dashboard" class="px-4 py-2 bg-gray-800 text-white rounded-lg shadow hover:bg-gray-700 transition"><i
+        <a href="/dashboard{% if current_scan_id %}?scan_id={{ current_scan_id }}{% endif %}"
+            class="px-4 py-2 bg-gray-800 text-white rounded-lg shadow hover:bg-gray-700 transition"><i
                 class="fa-solid fa-arrow-left mr-2"></i> Back</a>
         <button onclick="window.print()"
             class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-500 transition"><i
                 class="fa-solid fa-file-pdf mr-2"></i> Export PDF</button>
     </div>
 
-    <div class="max-w-5xl mx-auto bg-white p-12 mt-10 shadow-lg rounded-xl">
+    <div class="max-w-5xl mx-auto bg-white p-12 mt-10 shadow-lg rounded-xl border border-gray-200">
 
         <div class="border-b-2 border-blue-600 pb-6 mb-8 flex justify-between items-end">
             <div>
-                <h1 class="text-4xl font-black text-gray-900 mb-2"><i
-                        class="fa-solid fa-shield-halved text-blue-600 mr-3"></i> Minerva Intelligence</h1>
+                <h1 class="text-4xl font-black text-gray-900 mb-2 flex items-center">
+                    <img src="{{ url_for('static', path='img/minervaN.svg') }}" alt="Minerva Logo"
+                        class="w-10 h-10 mr-4">
+                    Minerva
+                </h1>
                 <h2 class="text-2xl text-gray-500 font-light">Network Vulnerability Assessment</h2>
             </div>
             <div class="text-right text-sm text-gray-500">
@@ -169,14 +196,15 @@
     <script>
         async function loadReportTopology() {
             try {
-                const response = await fetch('/api/topology');
+                const scanId = "{{ scan.id }}";
+                const response = await fetch(`/api/topology?scan_id=${scanId}&_t=${new Date().getTime()}`);
                 const data = await response.json();
 
                 if (!data.nodes) return;
 
                 const visualNodes = data.nodes.map(n => {
-                    let iconCode = '\uf108'; // fa-desktop
-                    let iconColor = '#4b5563'; // gray-600
+                    let iconCode = '\uf108';
+                    let iconColor = '#4b5563';
 
                     if (n.type === 'gateway') { iconCode = '\uf1eb'; iconColor = '#2563eb'; }
                     else if (n.has_vuln) { iconColor = '#dc2626'; }
@@ -187,7 +215,6 @@
                         if (n.type === 'iot') iconCode = '\uf544';
                     }
 
-                    // Limpiamos el HTML del label para que se vea bien en blanco
                     const labelParts = n.label.split('\n');
                     const hostClean = labelParts[0].replace(/<[^>]*>?/gm, '');
 
@@ -203,12 +230,24 @@
                 const container = document.getElementById('report-map');
                 const options = {
                     edges: { width: 2, color: { color: '#9ca3af' } },
-                    physics: { barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 150 } },
-                    interaction: { hover: false, zoomView: false, dragNodes: false } // Lo hacemos estático para imprimir
+                    physics: {
+                        barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 150 },
+                        stabilization: { iterations: 150 }
+                    },
+                    interaction: { hover: false, zoomView: false, dragNodes: false }
                 };
 
                 document.fonts.ready.then(() => {
-                    new vis.Network(container, { nodes: visualNodes, edges: data.edges }, options);
+                    const networkMap = new vis.Network(container, { nodes: visualNodes, edges: data.edges }, options);
+
+                    networkMap.on("stabilizationIterationsDone", function () {
+                        networkMap.setOptions({ physics: false });
+                        networkMap.fit();
+                    });
+
+                    window.addEventListener('beforeprint', () => {
+                        networkMap.fit();
+                    });
                 });
             } catch (error) { console.error("Error cargando mapa:", error); }
         }

@@ -3,12 +3,17 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from datetime import datetime
 
 from app.scanner import MinervaScanner
 from app.database import engine, get_db
 from app import models
 
 models.Base.metadata.create_all(bind=engine)
+
+class NoteCreate(BaseModel):
+    content: str
 
 app = FastAPI()
 
@@ -206,14 +211,13 @@ async def generate_report(request: Request, scan_id: int = None, db: Session = D
         "high_vulns": high_vulns,
         "med_vulns": med_vulns,
         "low_vulns": low_vulns,
-        "date": latest_scan.timestamp.strftime('%Y-%m-%d %H:%M')
+        "date": latest_scan.timestamp.strftime('%Y-%m-%d %H:%M'),
+        "current_scan_id": scan_id
     })
 
 @app.get("/report/{ip}", response_class=HTMLResponse)
-# AÑADIMOS scan_id: int = None
 async def generate_single_report(ip: str, request: Request, scan_id: int = None, db: Session = Depends(get_db)):
     
-    # LÓGICA DE LA MÁQUINA DEL TIEMPO
     if scan_id:
         scan_result = db.query(models.ScanResult).filter(models.ScanResult.ip_address == ip, models.ScanResult.scan_id == scan_id).first()
     else:
@@ -248,7 +252,8 @@ async def generate_single_report(ip: str, request: Request, scan_id: int = None,
         "high_count": high_count,
         "med_count": med_count,
         "low_count": low_count,
-        "date": scan_result.scan.timestamp.strftime('%Y-%m-%d %H:%M') if scan_result.scan else "N/A"
+        "date": scan_result.scan.timestamp.strftime('%Y-%m-%d %H:%M') if scan_result.scan else "N/A",
+        "current_scan_id": scan_id
     })
 
 @app.get("/api/topology")
@@ -330,7 +335,6 @@ async def get_node_details(ip: str, scan_id: int = None, db: Session = Depends(g
 
 @app.get("/host/{ip}", response_class=HTMLResponse)
 async def host_details(ip: str, request: Request, scan_id: int = None, db: Session = Depends(get_db)):
-    
     if scan_id:
         scan_result = db.query(models.ScanResult).filter(models.ScanResult.ip_address == ip, models.ScanResult.scan_id == scan_id).first()
     else:
@@ -354,6 +358,22 @@ async def host_details(ip: str, request: Request, scan_id: int = None, db: Sessi
     elif med_count > 0: risk_score = "Medium"
     elif len(open_ports) > 5: risk_score = "Medium"
 
+    historical_notes_db = db.query(models.Note).join(
+        models.ScanResult, models.ScanResult.id == models.Note.scan_result_id
+    ).join(
+        models.Scan, models.Scan.id == models.ScanResult.scan_id
+    ).filter(
+        models.ScanResult.ip_address == ip
+    ).order_by(models.Note.timestamp.desc()).all()
+    
+    notes_history = []
+    for n in historical_notes_db:
+        notes_history.append({
+            "date": n.timestamp.strftime('%Y-%m-%d %H:%M'),
+            "text": n.content,
+            "scan_type": n.scan_result.scan.scan_type if n.scan_result.scan else "N/A"
+        })
+
     return templates.TemplateResponse("host_details.html", {
         "request": request,
         "ip": ip,
@@ -365,16 +385,17 @@ async def host_details(ip: str, request: Request, scan_id: int = None, db: Sessi
         "high_count": high_count,  
         "med_count": med_count,  
         "low_count": low_count,
-        "current_scan_id": scan_id
+        "current_scan_id": scan_id,
+        "notes_history": notes_history 
     })
 
 @app.get("/host/{ip}/history", response_class=HTMLResponse)
-async def host_history(ip: str, request: Request, db: Session = Depends(get_db)):
+async def host_history(ip: str, request: Request, scan_id: int = None, db: Session = Depends(get_db)):
     history_results = db.query(models.ScanResult).filter(models.ScanResult.ip_address == ip).order_by(models.ScanResult.id.desc()).all()
     
     if not history_results:
         return HTMLResponse(content="<h1>No hay historial para este host.</h1>", status_code=404)
-        
+    
     host_info = history_results[0].host
     
     timeline = []
@@ -391,10 +412,28 @@ async def host_history(ip: str, request: Request, db: Session = Depends(get_db))
             "vulns_count": vulns_count,
             "scan_type": r.scan.scan_type if r.scan else "Desconocido"
         })
-        
+    
     return templates.TemplateResponse("host_history.html", {
         "request": request,
         "ip": ip,
         "host": host_info,
-        "timeline": timeline
+        "timeline": timeline,
+        "current_scan_id": scan_id
     })
+
+@app.post("/api/notes/{scan_result_id}")
+async def add_note(scan_result_id: int, note_data: NoteCreate, db: Session = Depends(get_db)):
+    scan_result = db.query(models.ScanResult).filter(models.ScanResult.id == scan_result_id).first()
+    
+    if not scan_result:
+        return {"error": "Registro no encontrado"}
+    
+    new_note = models.Note(
+        scan_result_id=scan_result.id, 
+        content=note_data.content, 
+        timestamp=datetime.now()
+    )
+    db.add(new_note)
+    db.commit()
+    
+    return {"message": "Nota añadida correctamente"}

@@ -27,9 +27,6 @@ class Scan(Base):
     results = relationship("ScanResult", back_populates="scan", cascade="all, delete-orphan")
 
 class Host(Base):
-    """
-    Representa un dispositivo físico único (MAC).
-    """
     __tablename__ = "hosts"
     mac_address = Column(String, primary_key=True, index=True)
     hostname = Column(String)
@@ -41,15 +38,14 @@ class Host(Base):
     results = relationship("ScanResult", back_populates="host")
 
 class ScanResult(Base):
-    """
-    Lo que Minerva vió en un host durante un escaneo específico.
-    """
     __tablename__ = "scan_results"
     id = Column(Integer, primary_key=True, index=True)
     scan_id = Column(Integer, ForeignKey("scans.id"))
     host_mac = Column(String, ForeignKey("hosts.mac_address"))
     ip_address = Column(String)
     status = Column(String)
+
+    notes = relationship("Note", back_populates="scan_result", cascade="all, delete-orphan")
     
     scan = relationship("Scan", back_populates="results")
     host = relationship("Host")
@@ -57,9 +53,6 @@ class ScanResult(Base):
     ports = relationship("Port", back_populates="scan_result", cascade="all, delete-orphan")
 
 class Port(Base):
-    """
-    Puertos y servicios descubiertos en una ip específica.
-    """
     __tablename__ = "ports"
     id = Column(Integer, primary_key=True, index=True)
     scan_result_id = Column(Integer, ForeignKey("scan_results.id"))
@@ -77,8 +70,17 @@ class Vulnerability(Base):
     id = Column(Integer, primary_key=True, index=True)
     port_id = Column(Integer, ForeignKey("ports.id"))
     cve_id = Column(String, index=True)
-    severity = Column(String) # High, Medium, Low
+    severity = Column(String)
     cvss_score = Column(String)
     description = Column(String, nullable=True)
     
     port = relationship("Port", back_populates="vulnerabilities")
+
+class Note(Base):
+    __tablename__ = "notes"
+    id = Column(Integer, primary_key=True, index=True)
+    scan_result_id = Column(Integer, ForeignKey("scan_results.id"))
+    content = Column(String)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+
+    scan_result = relationship("ScanResult", back_populates="notes")

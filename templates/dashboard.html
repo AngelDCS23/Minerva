@@ -23,244 +23,216 @@
     </style>
 </head>
 
-<body class="text-gray-300 font-sans flex h-screen overflow-hidden">
+<body class="text-gray-300 font-sans h-screen flex flex-col overflow-hidden bg-[#0b1120]">
 
-    <aside class="w-64 flex flex-col justify-between border-r border-panel bg-[#0f172a]">
-        <div>
-            <div class="flex items-center space-x-3 p-6 mb-4">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">M
-                </div>
+    <header class="h-20 border-b border-panel bg-[#0f172a] flex items-center justify-between px-8 shrink-0">
+
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                <img src="{{ url_for('static', path='img/minerva.svg') }}" alt="">
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white leading-tight tracking-wide">Minerva</h1>
+                <span class="text-xs text-gray-500 uppercase tracking-widest font-semibold">Network Scanner</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+
+            <div
+                class="flex items-center bg-[#1e293b] border border-gray-700 rounded-lg px-3 py-2 transition hover:border-gray-500">
+                <i class="fa-solid fa-clock-rotate-left text-blue-500 mr-2"></i>
+                <select id="scan-history-selector" onchange="window.location.href='/dashboard?scan_id=' + this.value"
+                    class="bg-transparent text-sm text-gray-300 font-medium border-none focus:ring-0 cursor-pointer outline-none">
+                    {% for scan in all_scans %}
+                    <option value="{{ scan.id }}" class="bg-[#0f172a]" {% if current_scan_id==scan.id %}selected{% endif
+                        %}>
+                        {{ scan.timestamp.strftime('%Y-%m-%d %H:%M') }} - {{ scan.scan_type }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <a href="/report{% if current_scan_id %}?scan_id={{ current_scan_id }}{% endif %}" target="_blank"
+                class="flex items-center space-x-2 bg-[#1e293b] hover:bg-gray-700 border border-gray-700 text-gray-300 px-4 py-2 rounded-lg text-sm font-medium transition">
+                <i class="fa-solid fa-file-pdf text-blue-500"></i>
+                <span>Generate Report</span>
+            </a>
+
+            <button onclick="window.location.href='/'"
+                class="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 transition">
+                <i class="fa-solid fa-radar text-white"></i>
+                <span>New Scan</span>
+            </button>
+        </div>
+
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-8 space-y-6">
+
+        <div class="grid grid-cols-4 gap-6">
+            <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start shadow-sm">
                 <div>
-                    <h1 class="text-lg font-bold text-white leading-tight">Minerva</h1>
-                    <span class="text-xs text-gray-500">Network Scanner</span>
+                    <p class="text-gray-400 text-sm mb-1 font-medium">Total Hosts</p>
+                    <h3 class="text-3xl font-bold text-white">{{total_hosts}}</h3>
+                </div>
+                <div class="p-2 bg-blue-500/10 text-blue-500 rounded-lg">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                            d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z">
+                        </path>
+                    </svg>
                 </div>
             </div>
 
-            <nav class="space-y-1 px-4">
-                <a href="#"
-                    class="flex items-center space-x-3 px-4 py-3 bg-blue-600/10 text-blue-500 rounded-lg font-medium">
+            <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start shadow-sm">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1 font-medium">Vulnerabilities</p>
+                    <h3 class="text-3xl font-bold {{ 'text-red-500' if total_vulns > 0 else 'text-white' }}">
+                        {{total_vulns}}</h3>
+                </div>
+                <div class="p-2 bg-red-500/10 text-red-500 rounded-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                        </path>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start shadow-sm">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1 font-medium">Active Nodes</p>
+                    <h3 class="text-3xl font-bold text-white">{{online_hosts}}</h3>
+                </div>
+                <div class="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
-                    <span>Network Map</span>
-                </a>
-                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white transition">
+                </div>
+            </div>
+
+            <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start shadow-sm">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1 font-medium">Total Scans</p>
+                    <h3 class="text-3xl font-bold text-white">{{all_scans|length}}</h3>
+                </div>
+                <div class="p-2 bg-purple-500/10 text-purple-500 rounded-lg">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <span>Scan History</span>
-                </a>
-
-            </nav>
+                </div>
+            </div>
         </div>
 
+        <div class="grid grid-cols-4 gap-6 h-[500px]">
 
-    </aside>
-
-    <main class="flex-1 flex flex-col h-full overflow-hidden bg-[#0b1120]">
-
-        <header class="h-20 border-b border-panel flex items-center justify-between px-8">
-            <div class="relative w-96">
-                <input type="text" placeholder="Search by IP, Hostname, or MAC..."
-                    class="w-full bg-panel border border-panel text-sm rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-blue-500 text-white placeholder-gray-500">
-                <svg class="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
+            <div
+                class="col-span-3 bg-panel border border-panel rounded-xl p-2 relative flex items-center justify-center overflow-hidden">
+                <span
+                    class="absolute top-4 left-4 z-10 bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full flex items-center shadow-lg border border-green-500/30">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span> Live Topology
+                </span>
+                <div id="network-map" class="w-full h-full"></div>
             </div>
-            <div class="flex items-center space-x-3">
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex items-center space-x-3 bg-[#0f172a] p-1.5 rounded-lg border border-gray-700">
-                        <i class="fa-solid fa-clock-rotate-left text-gray-500 ml-2"></i>
-                        <select id="scan-history-selector"
-                            onchange="window.location.href='/dashboard?scan_id=' + this.value"
-                            class="bg-transparent text-sm text-gray-300 border-none focus:ring-0 cursor-pointer outline-none">
-                            {% for scan in all_scans %}
-                            <option value="{{ scan.id }}" class="bg-[#0f172a]" {% if current_scan_id==scan.id
-                                %}selected{% endif %}>
-                                {{ scan.timestamp.strftime('%Y-%m-%d %H:%M') }} - {{ scan.scan_type }}
-                            </option>
-                            {% endfor %}
-                        </select>
+
+            <div class="bg-panel border border-panel rounded-xl p-6 flex flex-col shadow-lg overflow-y-auto">
+
+                <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-4 shrink-0">
+                    <h3 class="text-white font-bold tracking-wide">Node Details</h3>
+                    <span id="vuln-badge"
+                        class="hidden bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] uppercase font-bold px-2 py-1 rounded">Vulnerable</span>
+                </div>
+
+                <div class="mb-5 shrink-0 bg-[#0f172a] p-3.5 rounded-lg border border-gray-800 shadow-inner">
+                    <h4 id="node-hostname" class="text-white font-bold text-sm truncate" title="Hostname">Select a Node
+                    </h4>
+                    <div class="flex justify-between items-center mt-1.5">
+                        <p id="node-ip" class="text-blue-400 text-sm font-mono tracking-wider">---.---.---.---</p>
+                        <span id="node-type-icon" class="text-gray-600 text-sm"><i
+                                class="fa-solid fa-desktop"></i></span>
                     </div>
                 </div>
-                <a href="/report{% if current_scan_id %}?scan_id={{ current_scan_id }}{% endif %}" target="_blank"
-                    class="text-gray-400 hover:text-white transition flex items-center"><i
-                        class="fa-solid fa-file-pdf mr-2 text-blue-500"></i> Generate Report</a>
-                <button
-                    class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    <span>New Scan</span>
+
+                <div class="space-y-4 text-sm flex-1 shrink-0 mb-6 w-full">
+                    <div>
+                        <p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-3 shrink-0">Open
+                            Ports</p>
+                        <div id="open-ports-list" class="flex flex-wrap gap-2.5">
+                            <span class="text-gray-500 text-xs italic">Awaiting selection...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-deepscan" onclick=""
+                    class="shrink-0 w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg text-sm transition font-bold tracking-wide flex justify-center items-center shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-magnifying-glass-chart mr-2"></i> <span>Deep Scan</span>
                 </button>
+                <a id="btn-full-report" href="#"
+                    class="shrink-0 hidden w-full mt-3 bg-[#0f172a] hover:bg-gray-800 border border-gray-700 text-gray-300 py-2.5 rounded-lg text-sm transition font-medium text-center">
+                    View Host Profile
+                </a>
             </div>
-
-        </header>
-
-        <div class="flex-1 overflow-y-auto p-8 space-y-6">
-
-            <div class="grid grid-cols-4 gap-6">
-                <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start shadow-sm">
-                    <div>
-                        <p class="text-gray-400 text-sm mb-1 font-medium">Total Hosts</p>
-                        <h3 class="text-3xl font-bold text-white">{{total_hosts}}</h3>
-                    </div>
-                    <div class="p-2 bg-blue-500/10 text-blue-500 rounded-lg">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                                d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z">
-                            </path>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start shadow-sm">
-                    <div>
-                        <p class="text-gray-400 text-sm mb-1 font-medium">Vulnerabilities</p>
-                        <h3 class="text-3xl font-bold {{ 'text-red-500' if total_vulns > 0 else 'text-white' }}">
-                            {{total_vulns}}</h3>
-                    </div>
-                    <div class="p-2 bg-red-500/10 text-red-500 rounded-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
-                            </path>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start shadow-sm">
-                    <div>
-                        <p class="text-gray-400 text-sm mb-1 font-medium">Active Nodes</p>
-                        <h3 class="text-3xl font-bold text-white">{{online_hosts}}</h3>
-                    </div>
-                    <div class="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="bg-panel border border-panel p-5 rounded-xl flex justify-between items-start shadow-sm">
-                    <div>
-                        <p class="text-gray-400 text-sm mb-1 font-medium">Total Scans</p>
-                        <h3 class="text-3xl font-bold text-white">{{all_scans|length}}</h3>
-                    </div>
-                    <div class="p-2 bg-purple-500/10 text-purple-500 rounded-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex space-x-6 h-[450px]">
-
-                <div
-                    class="flex-1 bg-panel border border-panel rounded-xl p-2 relative flex items-center justify-center overflow-hidden">
-                    <span
-                        class="absolute top-4 left-4 z-10 bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full flex items-center shadow-lg">
-                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Live Topology
-                    </span>
-                    <div id="network-map" class="w-full h-full"></div>
-                </div>
-
-                <div class="w-80 bg-panel border border-panel rounded-xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-white font-bold">Node Details</h3>
-                        <span
-                            class="bg-red-500/20 text-red-500 text-[10px] uppercase font-bold px-2 py-1 rounded">Vulnerable</span>
-                    </div>
-
-                    <div class="text-center mb-6">
-                        <div id="node-icon-container"
-                            class="w-16 h-16 bg-[#0f172a] rounded-lg mx-auto mb-3 flex items-center justify-center border border-gray-700">
-                            <i class="fa-solid fa-desktop text-3xl text-gray-400"></i>
-                        </div>
-                        <h4 id="node-hostname" class="text-white font-bold text-lg">Selecciona un Nodo</h4>
-                        <p id="node-ip" class="text-gray-400 text-sm font-mono mt-1">---.---.---.---</p>
-                    </div>
-
-                    <div class="space-y-4 text-sm flex-1">
-                        <div>
-                            <p class="text-gray-500 text-xs mb-1">STATUS</p>
-                            <p id="node-status" class="text-gray-400 flex items-center">
-                                <span class="w-2 h-2 bg-gray-500 rounded-full mr-2"></span>Waiting...
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-gray-500 text-xs mb-1">OPEN PORTS</p>
-                            <div id="open-ports-list" class="flex flex-wrap gap-2 mt-1">
-                                <span class="text-gray-500 text-xs italic">Awaiting Deep Scan...</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button id="btn-deepscan" onclick=""
-                        class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg text-sm transition font-medium flex justify-center items-center">
-                        <span>Run Deep Scan</span>
-                    </button>
-                    <a id="btn-full-report" href="#"
-                        class="hidden w-full mt-3 bg-[#0f172a] hover:bg-gray-800 border border-gray-700 text-gray-300 py-2.5 rounded-lg text-sm transition font-medium text-center">
-                        View Full Report
-                    </a>
-                </div>
-            </div>
-            <div class="bg-panel border border-panel rounded-xl p-6">
-                <h3 class="text-white font-bold mb-4">Discovered Hosts (Latest Scan)</h3>
-                <table class="w-full text-left text-sm">
-                    <thead>
-                        <tr class="text-gray-500 border-b border-gray-800">
-                            <th class="pb-3 font-medium">IP Address</th>
-                            <th class="pb-3 font-medium">Hostname</th>
-                            <th class="pb-3 font-medium">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if hosts %}
-                        {% for host in hosts %}
-                        <tr class="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
-                            <td class="py-3 text-blue-400 font-mono">
-                                <a href="/host/{{ host.ip }}{% if current_scan_id %}?scan_id={{ current_scan_id }}{% endif %}"
-                                    class="hover:underline hover:text-blue-300 cursor-pointer">{{ host.ip }}</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% else %}
-                        <tr>
-                            <td colspan="3" class="py-4 text-center text-gray-500">No data available. Run a scan first.
-                            </td>
-                        </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
-
         </div>
+
+        <div class="bg-panel border border-panel rounded-xl p-6 shadow-sm">
+            <h3 class="text-white font-bold mb-4 flex items-center"><i
+                    class="fa-solid fa-list-ul text-blue-500 mr-2"></i> Discovered Hosts</h3>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-[#0f172a] border-y border-gray-800 text-gray-400">
+                    <tr>
+                        <th class="px-4 py-3 font-medium uppercase tracking-wider text-xs">IP Address</th>
+                        <th class="px-4 py-3 font-medium uppercase tracking-wider text-xs">Hostname</th>
+                        <th class="px-4 py-3 font-medium uppercase tracking-wider text-xs">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    {% if hosts %}
+                    {% for host in hosts %}
+                    <tr class="hover:bg-gray-800/40 transition">
+                        <td class="px-4 py-3 text-blue-400 font-mono font-medium">
+                            <a href="/host/{{ host.ip }}{% if current_scan_id %}?scan_id={{ current_scan_id }}{% endif %}"
+                                class="hover:underline hover:text-blue-300 cursor-pointer flex items-center">
+                                <i class="fa-solid fa-link text-gray-600 mr-2 text-xs"></i> {{ host.ip }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-3 text-gray-300">{{ host.hostname }}</td>
+                        <td class="px-4 py-3">
+                            <span
+                                class="px-2 py-1 rounded text-xs font-bold uppercase border 
+                                {{ 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' if host.status == 'up' else 'bg-red-500/10 text-red-500 border-red-500/20' }}">
+                                {{ host.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="py-8 text-center text-gray-500 italic">No data available for this scan.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
     </main>
 
     <script>
         async function loadTopology() {
             try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const scanId = urlParams.get('scan_id');
+                const scanId = "{{ current_scan_id or '' }}";
 
-                // Lo añadimos a la petición si existe
                 let url = '/api/topology';
 
-                // Truco Anti-Caché: Añadimos un timestamp
                 const cacheBuster = `&_t=${new Date().getTime()}`;
 
-                if (scanId) {
+                if (scanId !== "None" && scanId !== "") {
                     url += '?scan_id=' + scanId + cacheBuster;
                 } else {
-                    url += '?_t=' + new Date().getTime(); // Si no hay scan_id, igual engañamos a la caché
+                    url += '?_t=' + new Date().getTime();
                 }
 
                 const response = await fetch(url);
@@ -272,11 +244,9 @@
                 }
 
                 const visualNodes = data.nodes.map(n => {
-                    let iconCode = '\uf108'; // PC default
+                    let iconCode = '\uf108';
                     let iconColor = '#94a3b8';
 
-                    // CORRECCIÓN 2: Lógica separada para el icono y el color
-                    // Primero asignamos la forma...
                     if (n.type === 'gateway') iconCode = '\uf1eb';
                     else if (n.type === 'server') iconCode = '\uf233';
                     else if (n.type === 'printer') iconCode = '\uf02f';
@@ -284,11 +254,10 @@
                     else if (n.type === 'iot') iconCode = '\uf544';
                     else if (n.type === 'building') iconCode = '\uf1ad';
 
-                    // Y luego asignamos el color...
                     if (n.type === 'gateway') {
-                        iconColor = '#3b82f6'; // Azul para el router
+                        iconColor = '#3b82f6';
                     } else if (n.has_vuln) {
-                        iconColor = '#ef4444'; // ROJO si tiene vulnerabilidades
+                        iconColor = '#ef4444';
                     }
 
                     const labelParts = n.label.split('\n');
@@ -306,7 +275,7 @@
                             size: n.type === 'gateway' ? 55 : 40,
                             color: iconColor
                         },
-                        font: { color: '#cbd5e1', size: 12, face: 'sans-serif' },
+                        font: { color: '#cbd5e1', size: 12, face: 'sans-serif', background: 'rgba(15, 23, 42, 0.7)' },
                         shadow: n.type === 'gateway' || n.has_vuln ? {
                             enabled: true,
                             color: iconColor,
@@ -343,7 +312,6 @@
 
         async function loadNodeDetails(ip) {
             try {
-                // Get the current scan ID from the Jinja variable
                 const scanId = "{{ current_scan_id or '' }}";
 
                 let url = `/api/node/${ip}`;
@@ -355,7 +323,6 @@
                     url += '?_t=' + new Date().getTime();
                 }
 
-                // Show loading state
                 document.getElementById('node-hostname').innerText = "Loading...";
                 document.getElementById('node-ip').innerText = ip;
 
@@ -367,28 +334,33 @@
                     return;
                 }
 
-                // Update UI with node data
                 document.getElementById('node-hostname').innerText = data.hostname !== "Desconocido" ? data.hostname : "Unknown Host";
                 document.getElementById('node-ip').innerText = data.ip;
 
-                const statusHtml = data.status === 'up'
-                    ? '<span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span><span class="text-green-400">Online</span>'
-                    : '<span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span><span class="text-red-400">Offline</span>';
-                document.getElementById('node-status').innerHTML = statusHtml;
-
-                // Update Icon
                 let faClass = 'fa-desktop';
                 if (data.type === 'server') faClass = 'fa-server';
                 if (data.type === 'printer') faClass = 'fa-print';
                 if (data.type === 'camera') faClass = 'fa-camera';
                 if (data.type === 'gateway') faClass = 'fa-wifi';
-                document.getElementById('node-icon-container').innerHTML = `<i class="fa-solid ${faClass} text-3xl text-gray-400"></i>`;
+                if (data.type === 'iot') faClass = 'fa-microchip';
 
-                // Render ports using your existing helper function
+                let iconColor = data.vuln_count > 0 ? 'text-red-500' : 'text-gray-500';
+
+                const iconElement = document.getElementById('node-type-icon');
+                if (iconElement) {
+                    iconElement.innerHTML = `<i class="fa-solid ${faClass} ${iconColor}"></i>`;
+                }
+
+                const vulnBadge = document.getElementById('vuln-badge');
+                if (data.vuln_count > 0) {
+                    vulnBadge.classList.remove('hidden');
+                    vulnBadge.innerText = `${data.vuln_count} CVEs`;
+                } else {
+                    vulnBadge.classList.add('hidden');
+                }
+
                 renderPortsAndFirewall(data.ports, data.status);
 
-                // Update the "View Full Report" button
-                // Update the "View Full Report" button
                 const reportBtn = document.getElementById('btn-full-report');
                 if (scanId !== "None" && scanId !== "") {
                     reportBtn.href = `/host/${ip}?scan_id=${scanId}`;
@@ -413,106 +385,16 @@
             try {
                 const response = await fetch(`/deep_scan/${ip}`);
                 const data = await response.json();
-
-                // Usamos la misma lógica visual después de escanear (asumiendo que el host está 'up')
                 renderPortsAndFirewall(data.ports, 'up');
+
+                loadNodeDetails(ip);
 
             } catch (error) {
                 console.error("Deep Scan Failed:", error);
                 document.getElementById('open-ports-list').innerHTML = `<span class="text-red-500 text-xs">Scan failed.</span>`;
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<span>Run Deep Scan</span>`;
-            }
-        }
-
-        async function loadTopology() {
-            try {
-                // EL TRUCO DEFINITIVO: Python inyecta el ID aquí directamente, ignorando la caché
-                const scanId = "{{ current_scan_id or '' }}";
-
-                let url = '/api/topology';
-                const cacheBuster = `&_t=${new Date().getTime()}`;
-
-                if (scanId !== "None" && scanId !== "") {
-                    url += '?scan_id=' + scanId + cacheBuster;
-                } else {
-                    url += '?_t=' + new Date().getTime();
-                }
-
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (!data.nodes) {
-                    console.error("Error desde Python:", data);
-                    return;
-                }
-
-                // ... (El resto de tu código con visualNodes y el mapa se queda igual) ...
-
-                const visualNodes = data.nodes.map(n => {
-                    let iconCode = '\uf108'; // PC default
-                    let iconColor = '#94a3b8';
-
-                    if (n.type === 'gateway') {
-                        iconCode = '\uf1eb';
-                        iconColor = '#3b82f6';
-                    } else if (n.has_vuln) {
-                        iconColor = '#ef4444';
-                    } else {
-                        if (n.type === 'server') iconCode = '\uf233';
-                        if (n.type === 'printer') iconCode = '\uf02f';
-                        if (n.type === 'camera') iconCode = '\uf030';
-                        if (n.type === 'building') iconCode = '\uf1ad';
-                    }
-
-                    const labelParts = n.label.split('\n');
-                    const hostClean = labelParts[0].replace(/<[^>]*>?/gm, '');
-                    const ipClean = labelParts.length > 1 ? labelParts[1].replace(/<[^>]*>?/gm, '') : n.id;
-
-                    return {
-                        id: n.id,
-                        label: hostClean + '\n' + ipClean,
-                        shape: 'icon',
-                        icon: {
-                            face: '"Font Awesome 6 Free"',
-                            weight: "900",
-                            code: iconCode,
-                            size: n.type === 'gateway' ? 55 : 40,
-                            color: iconColor
-                        },
-                        font: { color: '#cbd5e1', size: 12, face: 'sans-serif' },
-                        shadow: n.type === 'gateway' || n.has_vuln ? {
-                            enabled: true,
-                            color: iconColor,
-                            size: 25,
-                            x: 0,
-                            y: 0
-                        } : false
-                    };
-                });
-
-                const container = document.getElementById('network-map');
-                const options = {
-                    edges: { width: 2, color: { color: '#334155', highlight: '#3b82f6' } },
-                    physics: { barnesHut: { gravitationalConstant: -3000, centralGravity: 0.3, springLength: 150 } },
-                    interaction: { hover: true, zoomView: true, dragNodes: true }
-                };
-
-                document.fonts.ready.then(() => {
-                    const network = new vis.Network(container, { nodes: visualNodes, edges: data.edges }, options);
-
-                    network.on("click", function (params) {
-                        if (params.nodes.length > 0 && params.nodes[0] !== 'gateway') {
-                            const selectedIp = params.nodes[0];
-                            document.getElementById('btn-deepscan').setAttribute('onclick', `launchDeepScan('${selectedIp}')`);
-                            loadNodeDetails(selectedIp);
-                        }
-                    });
-                });
-
-            } catch (error) {
-                console.error("Fallo crítico dibujando el mapa:", error);
+                btn.innerHTML = `<i class="fa-solid fa-magnifying-glass-chart mr-2"></i> <span>Deep Scan</span>`;
             }
         }
 
@@ -520,20 +402,18 @@
             const portsList = document.getElementById('open-ports-list');
             portsList.innerHTML = '';
 
-            // 1. Si el array está vacío, es que AÚN NO se ha escaneado
             if (!portsData || portsData.length === 0) {
                 portsList.innerHTML = `<span class="text-gray-500 text-xs italic">Awaiting Deep Scan...</span>`;
                 return;
             }
 
-            // 2. Si tiene 1 puerto y es el "0", es que Minerva cazó un Firewall
             if (portsData.length === 1 && portsData[0].port_number === 0) {
                 portsList.innerHTML = `
-                    <div class="bg-orange-500/10 border border-orange-500/30 text-orange-400 px-3 py-2 rounded-lg text-xs flex items-center w-full mt-2 shadow-lg">
+                    <div class="bg-orange-500/10 border border-orange-500/30 text-orange-400 px-3 py-2 rounded-lg text-xs flex items-center w-full shadow-inner">
                         <i class="fa-solid fa-shield-halved mr-3 text-xl"></i>
                         <div>
-                            <strong class="block mb-0.5 uppercase tracking-wide text-[10px]">Firewall / Stealth Mode</strong>
-                            <span class="opacity-80">All standard ports are filtered or dropped.</span>
+                            <strong class="block mb-0.5 uppercase tracking-wide text-[10px]">Firewall Detected</strong>
+                            <span class="opacity-80">Standard ports are filtered.</span>
                         </div>
                     </div>`;
                 return;
@@ -541,9 +421,9 @@
 
             portsData.forEach(port => {
                 if (port.state === 'filtered') {
-                    portsList.innerHTML += `<span class="bg-orange-900/30 text-orange-400 px-2 py-1 rounded text-xs border border-orange-700/50 hover:border-orange-500 transition cursor-help" title="Filtered/Firewall">${port.port_number} (Filtered)</span>`;
+                    portsList.innerHTML += `<span class="bg-[#1e293b] text-orange-400 px-2.5 py-1 rounded text-xs font-mono border border-gray-700 hover:border-orange-500 transition cursor-help shadow-sm" title="Filtered/Firewall">${port.port_number} (Filtered)</span>`;
                 } else {
-                    portsList.innerHTML += `<span class="bg-gray-800 text-green-400 px-2 py-1 rounded text-xs border border-gray-600 hover:border-green-500 transition cursor-help" title="${port.version_info}">${port.port_number} (${port.service_name})</span>`;
+                    portsList.innerHTML += `<span class="bg-[#1e293b] text-green-400 px-2.5 py-1 rounded text-xs font-mono border border-gray-700 hover:border-green-500 transition cursor-help shadow-sm" title="${port.version_info}">${port.port_number} (${port.service_name})</span>`;
                 }
             });
         }
