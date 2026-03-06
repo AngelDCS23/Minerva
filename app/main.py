@@ -27,10 +27,13 @@ async def read_item(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/scan")
-async def start_scan(target: str = None, scan_mode: str = "quick", db: Session = Depends(get_db)):
-    project = db.query(models.Project).filter(models.Project.name == "Default Workspace").first()
+async def start_scan(target: str = None, scan_mode: str = "quick", project_name: str = "Default Workspace", db: Session = Depends(get_db)):
+    
+    safe_project_name = project_name.strip() if project_name and project_name.strip() else "Default Workspace"
+    
+    project = db.query(models.Project).filter(models.Project.name == safe_project_name).first()
     if not project:
-        project = models.Project(name="Default Workspace", description="Automático")
+        project = models.Project(name=safe_project_name, description="Creado desde la interfaz")
         db.add(project)
         db.commit()
         db.refresh(project)
@@ -70,8 +73,21 @@ async def start_scan(target: str = None, scan_mode: str = "quick", db: Session =
     return {"message": "Descubrimiento completado", "ips": discovered_ips}
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, scan_id: int = None, db: Session = Depends(get_db)):
-    all_scans = db.query(models.Scan).order_by(models.Scan.timestamp.desc()).all()
+async def dashboard(request: Request, scan_id: int = None, project_id: int = None, db: Session = Depends(get_db)):
+    projects = db.query(models.Project).all()
+    
+    if project_id:
+        selected_project_id = project_id
+    elif scan_id:
+        scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
+        selected_project_id = scan.project_id if scan else (projects[0].id if projects else None)
+    else:
+        selected_project_id = projects[-1].id if projects else None
+
+    if selected_project_id:
+        all_scans = db.query(models.Scan).filter(models.Scan.project_id == selected_project_id).order_by(models.Scan.timestamp.desc()).all()
+    else:
+        all_scans = []
     
     if scan_id:
         selected_scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
@@ -99,7 +115,9 @@ async def dashboard(request: Request, scan_id: int = None, db: Session = Depends
         "online_hosts": online_hosts, 
         "total_vulns": total_vulns,
         "all_scans": all_scans,
-        "current_scan_id": selected_scan.id if selected_scan else None 
+        "current_scan_id": selected_scan.id if selected_scan else None,
+        "projects": projects,
+        "current_project_id": selected_project_id
     })
 
 @app.get("/deep_scan/{ip}")

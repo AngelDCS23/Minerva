@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minerva | Network Analysis</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .bg-dots {
             background-color: #0b1120;
@@ -47,10 +48,9 @@
     <main class="flex-grow flex flex-col items-center justify-center z-10 px-4">
 
         <button id="btn-radar" onclick="window.location.href = '/dashboard'"
-            class="relative w-40 h-40 rounded-full border border-gray-700/50 bg-gray-900/50 flex items-center justify-center hover:bg-gray-800/50 transition cursor-pointer group">
-
-            <img src="{{ url_for('static', path='img/minerva.svg') }}" alt="">
-            </div>
+            class="relative w-40 h-40 rounded-full border border-gray-700/50 bg-gray-900/50 flex items-center justify-center hover:bg-gray-800/50 transition cursor-pointer group shadow-lg shadow-blue-500/10">
+            <img src="{{ url_for('static', path='img/minerva.svg') }}" alt="Minerva Logo"
+                class="w-40 h-40 opacity-80 group-hover:opacity-100 transition">
         </button>
 
         <h2 class="mt-10 text-5xl font-bold tracking-tight">Network Analysis</h2>
@@ -71,183 +71,159 @@
     </main>
 
     <footer class="pb-10 flex justify-center z-10">
-        <button
-            class="flex items-center space-x-2 bg-gray-900/80 hover:bg-gray-800 border border-gray-700/50 text-gray-300 px-6 py-2.5 rounded-full text-sm transition">
-
-            <span onclick="openModal()">Configure Scan Settings</span>
+        <button onclick="openModal()"
+            class="flex items-center space-x-2 bg-gray-900/80 hover:bg-gray-800 border border-gray-700/50 text-gray-300 px-6 py-2.5 rounded-full text-sm transition shadow-lg">
+            <i class="fa-solid fa-sliders text-blue-500 mr-1"></i>
+            <span>Configure Scan Settings</span>
         </button>
     </footer>
 
-    <script>
-        async function iniciarSetup() {
-            const statusText = document.getElementById('sys-status');
-            const radarIcon = document.getElementById('radar-icon');
-            const btnRadar = document.getElementById('btn-radar');
+    <div id="scanModal"
+        class="fixed inset-0 bg-[#0b1120]/90 backdrop-blur-sm hidden flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-[#121b2f] border border-[#1e293b] rounded-xl w-full max-w-lg overflow-hidden">
 
-            btnRadar.disabled = true;
-            radarIcon.classList.replace('radar-pulse', 'radar-scanning');
-            radarIcon.classList.replace('text-blue-500', 'text-yellow-500');
-            statusText.textContent = "SCANNING NETWORK...";
-            statusText.classList.replace('text-blue-500', 'text-yellow-500');
+            <div class="px-6 py-4 border-b border-[#1e293b] flex justify-between items-center bg-[#0f172a]">
+                <h3 class="text-white font-bold text-lg flex items-center tracking-wide">
+                    Configure Scan Settings
+                </h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Project
+                        Name</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-folder-open absolute left-4 top-3.5 text-gray-500"></i>
+                        <input type="text" id="project-name"
+                            class="w-full bg-[#0b1120] border border-[#1e293b] rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition font-mono text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Initial Scan
+                        Type</label>
+                    <div class="relative">
+                        <select id="scan-type"
+                            class="w-full bg-[#0b1120] border border-[#1e293b] rounded-lg pl-4 pr-10 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm appearance-none cursor-pointer">
+                            <option value="quick">Quick Scan (Host Discovery)</option>
+                            <option value="deep">Deep Scan (Ports & OS Detection)</option>
+                            <option value="vuln">Vulnerability Scan (CVE Scripting)</option>
+                        </select>
+                        <i
+                            class="fa-solid fa-chevron-down absolute right-4 top-4 text-gray-500 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div id="progress-container" class="px-2 hidden">
+                    <div class="flex justify-between items-end mb-2">
+                        <span id="progress-text"
+                            class="text-[10px] font-bold text-blue-400 uppercase tracking-widest animate-pulse">Initializing...</span>
+                        <span id="progress-percent" class="text-xs font-mono text-gray-400">0%</span>
+                    </div>
+                    <div class="w-full bg-[#0f172a] rounded-full h-2 overflow-hidden border border-[#1e293b]">
+                        <div id="progress-bar"
+                            class="bg-blue-600 h-full rounded-full shadow-[0_0_10px_rgba(37,99,235,0.8)] transition-all duration-500 ease-out"
+                            style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-[#1e293b] flex justify-end space-x-4 bg-[#0f172a]">
+                <button onclick="closeModal()"
+                    class="text-sm font-medium text-gray-400 hover:text-white transition">Cancel</button>
+                <button onclick="launchConfiguredScan()" id="btn-start-scan"
+                    class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 transition flex items-center">
+                    <i class="fa-solid fa-play mr-2 text-xs"></i> Start Scan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal() { document.getElementById('scanModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('scanModal').classList.add('hidden'); }
+
+        async function launchConfiguredScan() {
+            const targetEl = document.getElementById('scan-target');
+            const target = targetEl ? targetEl.value.trim() : "";
+
+            const scanType = document.getElementById('scan-type').value;
+            const projectName = document.getElementById('project-name').value.trim() || 'Default Workspace';
+
+            const btn = document.getElementById('btn-start-scan');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const progressPercent = document.getElementById('progress-percent');
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Scanning...`;
+            progressContainer.classList.remove('hidden');
+
+            progressBar.style.width = '15%';
+            progressPercent.innerText = '15%';
+            progressText.innerText = 'Phase 1: Discovering hosts on network...';
 
             try {
+                let url = `/scan?scan_mode=${scanType}&project_name=${encodeURIComponent(projectName)}`;
+                if (target) url += `&target=${encodeURIComponent(target)}`;
 
-                await fetch('/scan');
+                const response = await fetch(url);
+                const data = await response.json();
 
-                statusText.textContent = "REDIRECTING...";
-                window.location.href = '/dashboard';
+                if (!response.ok) throw new Error("Network discovery failed");
+
+                const ips = data.ips || [];
+
+                if (scanType === 'quick' || ips.length === 0) {
+                    progressBar.style.width = '100%';
+                    progressPercent.innerText = '100%';
+                    progressText.innerText = 'Scan Complete! Redirecting...';
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+                    return;
+                }
+
+                let completed = 0;
+                const total = ips.length;
+                const remainingProgress = 85;
+                const step = remainingProgress / total;
+
+                for (let i = 0; i < total; i++) {
+                    const currentIp = ips[i];
+                    progressText.innerText = `Phase 2: Deep Scanning ${currentIp} (${completed + 1}/${total})...`;
+
+                    try {
+                        await fetch(`/deep_scan/${currentIp}?mode=${scanType}`);
+                    } catch (err) {
+                        console.error(`Fallo al escanear ${currentIp}:`, err);
+                    }
+
+                    completed++;
+                    const currentProgress = Math.round(15 + (step * completed));
+                    progressBar.style.width = `${currentProgress}%`;
+                    progressPercent.innerText = `${currentProgress}%`;
+                }
+
+                progressText.innerText = 'All tasks completed! Finalizing...';
+                progressText.classList.remove('animate-pulse');
+                progressText.classList.replace('text-blue-400', 'text-green-400');
+                progressBar.classList.replace('bg-blue-600', 'bg-green-500');
+
+                setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+
             } catch (error) {
-                console.error("Error en el escaneo:", error);
-                statusText.textContent = "SCAN FAILED";
-                statusText.classList.replace('text-yellow-500', 'text-red-500');
+                console.error(error);
+                progressText.innerText = 'Error during scan!';
+                progressText.classList.replace('text-blue-400', 'text-red-400');
+                progressBar.classList.replace('bg-blue-600', 'bg-red-600');
+                btn.disabled = false;
+                btn.innerHTML = "Retry Scan";
             }
         }
     </script>
 </body>
-
-<div id="scanModal"
-    class="fixed inset-0 bg-[#0b1120]/90 backdrop-blur-sm hidden flex items-center justify-center z-50 transition-opacity">
-    <div class="bg-[#121b2f] border border-[#1e293b] rounded-xl w-full max-w-lg overflow-hidden">
-
-        <div class="px-6 py-4 border-b border-[#1e293b] flex justify-between items-center bg-[#0f172a]">
-            <h3 class="text-white font-bold text-lg flex items-center">
-                <i class="fa-solid fa-terminal text-blue-500 mr-3"></i> Configure Scan Settings
-            </h3>
-            <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
-        </div>
-
-        <div class="p-6 space-y-6">
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Project Name</label>
-                <div class="relative">
-                    <i class="fa-solid fa-globe absolute left-4 top-3.5 text-gray-500"></i>
-                    <input type="text" id="project-name"
-                        class="w-full bg-[#0b1120] border border-[#1e293b] rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition font-mono text-sm">
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Initial Scan</label>
-                <div class="relative">
-                    <select id="scan-type"
-                        class="w-full bg-[#0b1120] border border-[#1e293b] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm appearance-none cursor-pointer">
-                        <option value="quick">Quick Scan (Host Discovery)</option>
-                        <option value="deep">Deep Scan (Ports & OS Detection)</option>
-                        <option value="vuln">Vulnerability Scan (CVE Scripting)</option>
-                    </select>
-                    <i class="fa-solid fa-chevron-down absolute right-4 top-4 text-gray-500 pointer-events-none"></i>
-                </div>
-            </div>
-
-            <div id="progress-container" class="px-6 pb-4 hidden">
-                <div class="flex justify-between items-end mb-2">
-                    <span id="progress-text"
-                        class="text-xs font-bold text-blue-400 uppercase tracking-widest animate-pulse">Initializing...</span>
-                    <span id="progress-percent" class="text-xs font-mono text-gray-400">0%</span>
-                </div>
-                <div class="w-full bg-[#1e293b] rounded-full h-2.5 overflow-hidden border border-gray-800">
-                    <div id="progress-bar"
-                        class="bg-blue-600 h-2.5 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.8)] transition-all duration-500 ease-out"
-                        style="width: 0%"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="px-6 py-4 border-t border-[#1e293b] flex justify-end space-x-4 bg-[#0f172a]">
-            <button onclick="closeModal()"
-                class="text-sm font-medium text-gray-400 hover:text-white transition">Cancel</button>
-            <button onclick="launchConfiguredScan()" id="btn-start-scan"
-                class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 transition">
-                Save Settings & Scan
-            </button>
-        </div>
-    </div>
-</div>
-
-<script>
-    function openModal() { document.getElementById('scanModal').classList.remove('hidden'); }
-    function closeModal() { document.getElementById('scanModal').classList.add('hidden'); }
-
-    async function launchConfiguredScan() {
-        const targetEl = document.getElementById('scan-target');
-        const target = targetEl ? targetEl.value.trim() : "";
-
-        const scanType = document.getElementById('scan-type').value;
-        const btn = document.getElementById('btn-start-scan');
-
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress-bar');
-        const progressText = document.getElementById('progress-text');
-        const progressPercent = document.getElementById('progress-percent');
-
-        btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Scanning...`;
-        progressContainer.classList.remove('hidden');
-
-        progressBar.style.width = '15%';
-        progressPercent.innerText = '15%';
-        progressText.innerText = 'Phase 1: Discovering hosts on network...';
-
-        try {
-            let url = `/scan?scan_mode=${scanType}`;
-            if (target) url += `&target=${encodeURIComponent(target)}`;
-
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (!response.ok) throw new Error("Network discovery failed");
-
-            const ips = data.ips || [];
-
-            if (scanType === 'quick' || ips.length === 0) {
-                progressBar.style.width = '100%';
-                progressPercent.innerText = '100%';
-                progressText.innerText = 'Scan Complete! Redirecting...';
-                setTimeout(() => { window.location.href = '/dashboard'; }, 800);
-                return;
-            }
-
-            let completed = 0;
-            const total = ips.length;
-            const remainingProgress = 85;
-            const step = remainingProgress / total;
-
-            for (let i = 0; i < total; i++) {
-                const currentIp = ips[i];
-                progressText.innerText = `Phase 2: Deep Scanning ${currentIp} (${completed + 1}/${total})...`;
-
-                try {
-                    await fetch(`/deep_scan/${currentIp}?mode=${scanType}`);
-                } catch (err) {
-                    console.error(`Fallo al escanear ${currentIp}:`, err);
-                }
-
-                completed++;
-                const currentProgress = Math.round(15 + (step * completed));
-                progressBar.style.width = `${currentProgress}%`;
-                progressPercent.innerText = `${currentProgress}%`;
-            }
-
-            progressText.innerText = 'All tasks completed! Finalizing...';
-            progressText.classList.remove('animate-pulse');
-            progressText.classList.replace('text-blue-400', 'text-green-400');
-            progressBar.classList.replace('bg-blue-600', 'bg-green-500');
-
-            setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
-
-        } catch (error) {
-            console.error(error);
-            progressText.innerText = 'Error during scan!';
-            progressText.classList.replace('text-blue-400', 'text-red-400');
-            progressBar.classList.replace('bg-blue-600', 'bg-red-600');
-            btn.disabled = false;
-            btn.innerHTML = "Retry Scan";
-        }
-    }
-</script>
-
-
 
 </html>
